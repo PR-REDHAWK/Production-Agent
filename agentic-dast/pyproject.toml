@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "pyyaml>=6.0.0",
     "networkx>=3.4.0",
+    "playwright>=1.48.0",
 ]
 
 [project.optional-dependencies]
@@ -21,5 +22,5 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["mock_tbo_target", "safety"]
+testpaths = ["mock_tbo_target", "safety", "graph", "recon", "inventory"]
 asyncio_mode = "auto"

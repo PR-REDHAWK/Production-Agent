@@ -6,6 +6,7 @@ and Playwright route interception) MUST pass through SafetyGateway.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import math
 import posixpath
@@ -220,6 +221,33 @@ class TokenBucketRateLimiter:
                 wait_seconds = min(1.0, max(0.01, max(need_host, need_ep)))
             time.sleep(wait_seconds)
 
+    async def acquire_async(self, host: str, canonical_endpoint: str, pace: bool = False) -> None:
+        endpoint_key = f"{host}:{canonical_endpoint}"
+        while True:
+            wait_seconds = 0.0
+            with self._lock:
+                now = time.monotonic()
+                host_bucket = self._host_buckets.setdefault(
+                    host, _Bucket(self.config.global_rps, self.config.burst_capacity)
+                )
+                ep_bucket = self._endpoint_buckets.setdefault(
+                    endpoint_key, _Bucket(self.config.per_endpoint_rps, self.config.burst_capacity)
+                )
+                if host_bucket.can_consume(now) and ep_bucket.can_consume(now):
+                    host_bucket.consume(now)
+                    ep_bucket.consume(now)
+                    return
+
+                if not pace:
+                    raise RateLimitBlockedError(
+                        f"Rate limit burst blocked for host='{host}' endpoint='{canonical_endpoint}'"
+                    )
+
+                need_host = (1.0 - host_bucket.tokens) / host_bucket.rate_rps if host_bucket.tokens < 1.0 else 0.0
+                need_ep = (1.0 - ep_bucket.tokens) / ep_bucket.rate_rps if ep_bucket.tokens < 1.0 else 0.0
+                wait_seconds = min(1.0, max(0.01, max(need_host, need_ep)))
+            await asyncio.sleep(wait_seconds)
+
 
 class CircuitBreaker:
     """Tracks target p95 latency and 5xx ratio; trips EMERGENCY_PAUSE on strain."""
@@ -373,7 +401,7 @@ class SafetyGateway:
         )
         self.audit.append(rec)
 
-    def _login_via_gateway(self, cfg: ActorConfig, password: str) -> str:
+    def _login_via_gateway(self, cfg: ActorConfig, password: str, pace: bool = False) -> str:
         """Perform test-account login strictly through this SafetyGateway."""
         if not cfg.login_url or not cfg.username:
             raise ValueError("ActorConfig missing login_url or username")
@@ -381,6 +409,7 @@ class SafetyGateway:
             gateway=self,
             agent="credential_vault",
             actor="unauthenticated",
+            pace=pace,
             inner_transport=self._login_transport,
         )
         with httpx.Client(transport=transport, follow_redirects=False, timeout=5.0) as client:
@@ -390,7 +419,7 @@ class SafetyGateway:
         data = resp.json()
         return str(data["access_token"])
 
-    async def _login_via_gateway_async(self, cfg: ActorConfig, password: str) -> str:
+    async def _login_via_gateway_async(self, cfg: ActorConfig, password: str, pace: bool = False) -> str:
         """Async test-account login strictly through this SafetyGateway."""
         if not cfg.login_url or not cfg.username:
             raise ValueError("ActorConfig missing login_url or username")
@@ -398,6 +427,7 @@ class SafetyGateway:
             gateway=self,
             agent="credential_vault",
             actor="unauthenticated",
+            pace=pace,
             inner_transport=self._async_login_transport,
         )
         async with httpx.AsyncClient(transport=transport, follow_redirects=False, timeout=5.0) as client:
@@ -407,15 +437,14 @@ class SafetyGateway:
         data = resp.json()
         return str(data["access_token"])
 
-    def _validate_pre_flight(
+    def _validate_policy_only(
         self,
         *,
         method: str,
         url: str,
         risk_level: RiskLevel,
         hitl_approval_id: str | None,
-        pace: bool,
-    ) -> None:
+    ) -> tuple[str, str]:
         self.circuit_breaker.check_ready()
         if risk_level in self.scope_config.safety_guards.hitl_required_risk_levels:
             with self._metrics_lock:
@@ -427,8 +456,35 @@ class SafetyGateway:
 
         _, host, _, norm_path = self.validator.validate_url(url)
         self.validator.validate_method_and_path(method, norm_path)
-        canonical = canonicalize_path(norm_path)
+        return host, canonicalize_path(norm_path)
+
+    def _validate_pre_flight(
+        self,
+        *,
+        method: str,
+        url: str,
+        risk_level: RiskLevel,
+        hitl_approval_id: str | None,
+        pace: bool,
+    ) -> None:
+        host, canonical = self._validate_policy_only(
+            method=method, url=url, risk_level=risk_level, hitl_approval_id=hitl_approval_id
+        )
         self.rate_limiter.acquire(host=host, canonical_endpoint=canonical, pace=pace)
+
+    async def _validate_pre_flight_async(
+        self,
+        *,
+        method: str,
+        url: str,
+        risk_level: RiskLevel,
+        hitl_approval_id: str | None,
+        pace: bool,
+    ) -> None:
+        host, canonical = self._validate_policy_only(
+            method=method, url=url, risk_level=risk_level, hitl_approval_id=hitl_approval_id
+        )
+        await self.rate_limiter.acquire_async(host=host, canonical_endpoint=canonical, pace=pace)
 
     def prepare_request(
         self,
@@ -455,7 +511,9 @@ class SafetyGateway:
             )
             final_headers = dict(headers)
             if inject_auth:
-                auth_headers = self.vault.resolve_auth_headers(actor, login_fetcher=self._login_via_gateway)
+                auth_headers = self.vault.resolve_auth_headers(
+                    actor, login_fetcher=lambda cfg, pw: self._login_via_gateway(cfg, pw, pace=pace)
+                )
                 for k, v in auth_headers.items():
                     final_headers.setdefault(k, v)
             return final_headers
@@ -487,7 +545,7 @@ class SafetyGateway:
     ) -> dict[str, str]:
         """Async pre-flight validation and symbolic actor token injection."""
         try:
-            self._validate_pre_flight(
+            await self._validate_pre_flight_async(
                 method=method,
                 url=url,
                 risk_level=risk_level,
@@ -496,8 +554,11 @@ class SafetyGateway:
             )
             final_headers = dict(headers)
             if inject_auth:
+                async def _fetch(cfg: ActorConfig, pw: str) -> str:
+                    return await self._login_via_gateway_async(cfg, pw, pace=pace)
+
                 auth_headers = await self.vault.resolve_auth_headers_async(
-                    actor, login_fetcher=self._login_via_gateway_async
+                    actor, login_fetcher=_fetch
                 )
                 for k, v in auth_headers.items():
                     final_headers.setdefault(k, v)
@@ -835,6 +896,31 @@ def create_playwright_route_handler(
         except Exception:  # noqa: BLE001
             await route.abort("blockedbyclient")
             return
+
+        if hasattr(route, "fetch") and hasattr(route, "fulfill"):
+            t0 = time.perf_counter()
+            api_resp = await route.fetch(headers=final_headers, max_redirects=0)
+            latency_ms = (time.perf_counter() - t0) * 1000.0
+            resp_text = await api_resp.text()
+            try:
+                gateway.finalize_response(
+                    agent=agent,
+                    actor=actor,
+                    method=method,
+                    url=url,
+                    req_headers=final_headers,
+                    req_body_text=body_text,
+                    status_code=int(api_resp.status),
+                    resp_headers=dict(api_resp.headers),
+                    resp_body_text=resp_text,
+                    latency_ms=latency_ms,
+                )
+            except ScopeViolationError:
+                await route.abort("blockedbyclient")
+                return
+            await route.fulfill(response=api_resp)
+            return
+
         await route.continue_(headers=final_headers)
 
     return _handle_route

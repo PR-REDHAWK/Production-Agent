@@ -235,3 +235,44 @@ async def test_playwright_route_handler_enforces_scope_and_auth(tmp_path: Path) 
     assert valid_route.aborted is None
     assert valid_route.continued_headers is not None
     assert valid_route.continued_headers["Authorization"] == "Bearer synthetic-pw-token-123"
+
+    class _FakeAPIResp:
+        def __init__(self, status: int, headers: dict[str, str], body: str) -> None:
+            self.status = status
+            self.headers = headers
+            self._body = body
+
+        async def text(self) -> str:
+            return self._body
+
+    class _FakeFetchRoute(_FakeRoute):
+        def __init__(self, url: str, resp: _FakeAPIResp) -> None:
+            super().__init__(url)
+            self._resp = resp
+            self.fulfilled = False
+            self.fetched_headers: dict[str, str] | None = None
+
+        async def fetch(self, headers: dict[str, str] | None = None, max_redirects: int | None = None) -> _FakeAPIResp:
+            assert max_redirects == 0
+            self.fetched_headers = headers
+            return self._resp
+
+        async def fulfill(self, response: _FakeAPIResp) -> None:
+            self.fulfilled = True
+
+    fetch_ok = _FakeFetchRoute(
+        "http://127.0.0.1:8001/api/v3/search",
+        _FakeAPIResp(200, {"content-type": "application/json"}, '{"results": []}'),
+    )
+    await handler(fetch_ok)
+    assert fetch_ok.fulfilled is True
+    assert fetch_ok.fetched_headers is not None
+    assert gw.metrics()["allowed_requests"] >= 1
+
+    fetch_bad_redir = _FakeFetchRoute(
+        "http://127.0.0.1:8001/api/v3/search",
+        _FakeAPIResp(302, {"location": "https://evil.example.com/phish"}, ""),
+    )
+    await handler(fetch_bad_redir)
+    assert fetch_bad_redir.aborted == "blockedbyclient"
+    assert fetch_bad_redir.fulfilled is False
