@@ -1,0 +1,25 @@
+[project]
+name = "agentic-dast"
+version = "0.1.0"
+description = "Hybrid Neuro-Symbolic Agentic Real-Time DAST for TBO Security Hackathon 2026"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "httpx>=0.28.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "pyyaml>=6.0.0",
+    "networkx>=3.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["mock_tbo_target", "safety"]
+asyncio_mode = "auto"

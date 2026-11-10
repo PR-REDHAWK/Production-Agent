@@ -1,0 +1,58 @@
+{
+  "default_owner": {
+    "team": "platform-security",
+    "slack_channel": "#sec-triage",
+    "jira_project": "SEC"
+  },
+  "routes": [
+    {
+      "path_prefix": "/api/v3/bookings",
+      "team": "b2b-bookings-core",
+      "owner_email": "bookings-oncall@synthetic-tbo.local",
+      "jira_component": "Bookings-API",
+      "business_domain": "BOOKINGS"
+    },
+    {
+      "path_prefix": "/api/v3/holds",
+      "team": "b2b-bookings-core",
+      "owner_email": "bookings-oncall@synthetic-tbo.local",
+      "jira_component": "Bookings-API",
+      "business_domain": "BOOKINGS"
+    },
+    {
+      "path_prefix": "/api/v3/coupons",
+      "team": "pricing-promotions",
+      "owner_email": "pricing-oncall@synthetic-tbo.local",
+      "jira_component": "Pricing-Engine",
+      "business_domain": "PAYMENTS_CREDIT"
+    },
+    {
+      "path_prefix": "/api/v3/suppliers",
+      "team": "supplier-integrations",
+      "owner_email": "suppliers-oncall@synthetic-tbo.local",
+      "jira_component": "Supplier-GW",
+      "business_domain": "SUPPLIER_ADMIN"
+    },
+    {
+      "path_prefix": "/api/v3/users",
+      "team": "identity-access",
+      "owner_email": "iam-oncall@synthetic-tbo.local",
+      "jira_component": "B2B-IAM",
+      "business_domain": "PII_TRAVELLER"
+    },
+    {
+      "path_prefix": "/api/v3/search",
+      "team": "search-discovery",
+      "owner_email": "search-oncall@synthetic-tbo.local",
+      "jira_component": "Search-Service",
+      "business_domain": "PUBLIC_SEARCH"
+    },
+    {
+      "path_prefix": "/api/v1/",
+      "team": "legacy-bookings-team",
+      "owner_email": "legacy-oncall@synthetic-tbo.local",
+      "jira_component": "Legacy-V1",
+      "business_domain": "BOOKINGS"
+    }
+  ]
+}

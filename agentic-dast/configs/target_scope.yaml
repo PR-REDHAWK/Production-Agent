@@ -1,0 +1,49 @@
+# Approved Target Scope & Safety Policy (Fail-Closed)
+# Referenced by safety/ (per architecture_and_roadmap.md §3.B and rules.md §4)
+
+environment: "local_mock"
+
+approved_targets:
+  - name: "mock_tbo_target"
+    schemes: ["http"]
+    hosts: ["127.0.0.1", "localhost", "testserver"]
+    ports: [8001, 80]
+    allowed_path_prefixes:
+      - "/api/"
+      - "/internal/"
+      - "/static/"
+      - "/__sim/"
+      - "/"
+    blocked_path_patterns:
+      - "^/admin/destroy"
+      - "^/system/shutdown"
+
+  - name: "local_oob_canary"
+    schemes: ["http"]
+    hosts: ["127.0.0.1", "localhost"]
+    ports: [8002]
+    allowed_path_prefixes:
+      - "/canary/"
+
+rate_limits:
+  global_rps: 8.0
+  per_endpoint_rps: 4.0
+  burst_capacity: 10
+  micro_burst_max_concurrent: 4
+
+circuit_breaker:
+  max_p95_latency_ms: 2000.0
+  max_5xx_ratio: 0.25
+  min_sample_window: 10
+  cooldown_seconds: 15.0
+
+safety_guards:
+  block_external_redirects: true
+  block_global_delete: true
+  max_payload_iterations_per_param: 12
+  hitl_required_risk_levels: ["HIGH", "CRITICAL"]
+
+audit_log:
+  jsonl_path: "safety/audit_log.jsonl"
+  sqlite_path: "safety/audit_log.db"
+  max_body_excerpt_chars: 512
