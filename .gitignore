@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+
+# Runtime Audit & DB Artifacts
+agentic-dast/safety/audit_log.jsonl
+agentic-dast/safety/audit_log.db*
+*.db-wal
+*.db-shm
+
+# Frontend (Vite + React + Tailwind)
+node_modules/
+dist/
+.vite/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
