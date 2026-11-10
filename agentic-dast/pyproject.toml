@@ -22,5 +22,5 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["mock_tbo_target", "safety", "graph", "recon", "inventory", "triggers", "agents"]
+testpaths = ["mock_tbo_target", "safety", "graph", "recon", "inventory", "triggers", "agents", "api"]
 asyncio_mode = "auto"
