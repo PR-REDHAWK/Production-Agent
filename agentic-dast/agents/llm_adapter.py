@@ -10,11 +10,15 @@ Rules enforced (rules.md §1 & §6):
 from __future__ import annotations
 
 import json
+import logging
 import os
+from pathlib import Path
 from typing import Any, Literal, TypeVar
 
 import httpx
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger("agentic_dast.llm")
 
 LLMProvider = Literal["deterministic", "gemini", "openai", "ollama"]
 T = TypeVar("T", bound=BaseModel)
@@ -25,6 +29,38 @@ _ALLOWED_LLM_PREFIXES = (
     "http://127.0.0.1:11434/",
     "http://localhost:11434/",
 )
+
+
+def _load_local_env() -> None:
+    """Load key=value pairs from agents/.env or project .env without overwriting existing env vars."""
+    candidates = (
+        Path(__file__).resolve().parent / ".env",
+        Path(__file__).resolve().parent.parent / ".env",
+    )
+    for env_path in candidates:
+        if not env_path.is_file():
+            continue
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            key = key.strip()
+            val = val.strip().strip('"').strip("'")
+            if key and val and key not in os.environ:
+                os.environ[key] = val
+
+
+def _strip_json_fences(raw: str) -> str:
+    text = raw.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    return text
 
 
 class BusinessLogicHypotheses(BaseModel):
@@ -48,6 +84,7 @@ class LLMAdapter:
         timeout_seconds: float = 15.0,
         max_retries: int = 2,
     ) -> None:
+        _load_local_env()
         env_provider = os.environ.get("LLM_PROVIDER", "").lower().strip()
         if provider is not None:
             self.provider: LLMProvider = provider
@@ -66,6 +103,7 @@ class LLMAdapter:
         )
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
+        self.last_used_fallback = False
 
     @staticmethod
     def sanitize_untrusted_context(data: dict[str, Any]) -> str:
@@ -83,6 +121,7 @@ class LLMAdapter:
         deterministic_fallback: T,
     ) -> T:
         if self.provider == "deterministic":
+            self.last_used_fallback = True
             return deterministic_fallback
 
         user_prompt = (
@@ -96,11 +135,14 @@ class LLMAdapter:
         for _ in range(self.max_retries + 1):
             try:
                 raw_json = await self._call_provider(system_prompt=system_prompt, user_prompt=user_prompt)
-                return response_model.model_validate_json(raw_json)
-            except Exception as exc:  # noqa: BLE001
+                parsed = response_model.model_validate_json(_strip_json_fences(raw_json))
+                self.last_used_fallback = False
+                return parsed
+            except (httpx.HTTPError, ValueError, KeyError, IndexError, RuntimeError) as exc:
                 last_err = exc
-        # Safe degradation to deterministic fallback if external LLM fails or returns invalid schema
-        _ = last_err
+
+        logger.warning("LLM provider '%s' failed (%s); using deterministic fallback", self.provider, type(last_err).__name__)
+        self.last_used_fallback = True
         return deterministic_fallback
 
     async def _call_provider(self, *, system_prompt: str, user_prompt: str) -> str:
@@ -117,7 +159,7 @@ class LLMAdapter:
                 "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1},
             }
             async with httpx.AsyncClient(timeout=self.timeout_seconds) as client:
-                resp = await client.post(url, params={"key": api_key}, json=payload)
+                resp = await client.post(url, headers={"x-goog-api-key": api_key}, json=payload)
                 resp.raise_for_status()
                 body = resp.json()
                 return str(body["candidates"][0]["content"]["parts"][0]["text"])

@@ -17,7 +17,7 @@ Hybrid neuro-symbolic autonomous security agents that watch deploys and JS/log d
 2. **Start the FastAPI Control Plane (includes in-memory `mock_tbo_target` + local OOB canary on port `8002`):**
    ```powershell
    cd agentic-dast
-   uvicorn api.app:app --host 127.0.0.1 --port 8000
+   python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
    ```
 3. **Start the Vite + React + Tailwind Dashboard:**
    ```powershell
@@ -58,7 +58,7 @@ To switch from `mock_tbo_target/` to TBO's live hackathon staging environment wi
    # Optional Gemini API enrichment (falls back to deterministic planner if unset):
    $env:LLM_PROVIDER = "gemini"
    $env:GEMINI_API_KEY = "<your-key>"
-   uvicorn api.app:app --host 127.0.0.1 --port 8000
+   python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
    ```
 
 5. **Wire CI/CD Deploy Webhook:**

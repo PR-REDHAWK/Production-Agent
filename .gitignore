@@ -10,6 +10,9 @@ venv/
 # Environment & Secrets
 .env
 .env.*
+**/.env
+**/.env.*
+agentic-dast/agents/.env
 !.env.example
 
 # Runtime Audit & DB Artifacts

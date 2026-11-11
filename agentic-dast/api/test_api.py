@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 
+from agents.llm_adapter import LLMAdapter
 from api.app import create_control_app
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,6 +21,7 @@ async def test_control_plane_full_lifecycle_and_sse(tmp_path: Path) -> None:
         start_canary=True,
         audit_dir=tmp_path,
     )
+    app.state.cp.orchestrator.llm = LLMAdapter(provider="deterministic")
     app.state.cp.start_local_canary()
     try:
         transport = httpx.ASGITransport(app=app)
