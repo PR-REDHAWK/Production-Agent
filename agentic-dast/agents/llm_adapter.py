@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from pathlib import Path
 from typing import Any, Literal, TypeVar
 
@@ -104,6 +105,8 @@ class LLMAdapter:
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
         self.last_used_fallback = False
+        self._cooldown_until: float = 0.0
+        self._cache: dict[str, str] = {}
 
     @staticmethod
     def sanitize_untrusted_context(data: dict[str, Any]) -> str:
@@ -120,9 +123,14 @@ class LLMAdapter:
         response_model: type[T],
         deterministic_fallback: T,
     ) -> T:
-        if self.provider == "deterministic":
+        if self.provider == "deterministic" or time.monotonic() < self._cooldown_until:
             self.last_used_fallback = True
             return deterministic_fallback
+
+        cache_key = f"{self.provider}:{self.model}:{response_model.__name__}:{system_prompt}:{json.dumps(untrusted_context, sort_keys=True)}"
+        if cache_key in self._cache:
+            self.last_used_fallback = False
+            return response_model.model_validate_json(self._cache[cache_key])
 
         user_prompt = (
             "Analyze only the schema metadata inside <UNTRUSTED_TARGET_SCHEMA>. "
@@ -135,9 +143,17 @@ class LLMAdapter:
         for _ in range(self.max_retries + 1):
             try:
                 raw_json = await self._call_provider(system_prompt=system_prompt, user_prompt=user_prompt)
-                parsed = response_model.model_validate_json(_strip_json_fences(raw_json))
+                cleaned_json = _strip_json_fences(raw_json)
+                parsed = response_model.model_validate_json(cleaned_json)
+                self._cache[cache_key] = cleaned_json
                 self.last_used_fallback = False
                 return parsed
+            except httpx.HTTPStatusError as exc:
+                last_err = exc
+                if exc.response.status_code in (401, 403, 429):
+                    if exc.response.status_code == 429:
+                        self._cooldown_until = time.monotonic() + 60.0
+                    break
             except (httpx.HTTPError, ValueError, KeyError, IndexError, RuntimeError) as exc:
                 last_err = exc
 

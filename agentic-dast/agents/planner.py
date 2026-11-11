@@ -163,6 +163,7 @@ class AttackPlannerAgent:
         }
         endpoints = graph.list_endpoints()
         tasks: list[AttackTask] = []
+        llm_budget = 3
 
         for idx, ep in enumerate(endpoints, start=1):
             if ep.canonical_path.startswith("/api/v3/auth/login"):
@@ -175,7 +176,8 @@ class AttackPlannerAgent:
             priority = self._compute_priority(ep, is_delta=is_delta, zombie_shadow_paths=zs_paths)
             default_hyps = self._default_hypotheses(ep)
 
-            if "business_logic" in executors and (is_delta or "PAYMENTS_CREDIT" in ep.sensitivity_tags):
+            if llm_budget > 0 and "business_logic" in executors and (is_delta or "PAYMENTS_CREDIT" in ep.sensitivity_tags):
+                llm_budget -= 1
                 llm_out = await self.llm.generate_structured(
                     system_prompt=(
                         "You are an AppSec attack planner for a B2B travel API. "

@@ -180,22 +180,27 @@ class TriageAgent:
                 deduped[key] = f
 
         tickets: list[TriagedTicket] = []
+        llm_budget = 3
         for dedupe_k, finding in deduped.items():
             severity = self.score_severity(finding)
             owner_team, owner_contact = self.graph.resolve_owner(finding.canonical_endpoint)
             default_narr = self._default_remediation(finding)
-            narrative = await self.llm.generate_structured(
-                system_prompt="Write concise business impact and code-level remediation for a verified API finding.",
-                untrusted_context={
-                    "endpoint": finding.canonical_endpoint,
-                    "method": finding.method,
-                    "vuln_class": finding.vuln_class,
-                    "parameter": finding.affected_parameter,
-                    "severity": severity,
-                },
-                response_model=RemediationNarrative,
-                deterministic_fallback=default_narr,
-            )
+            if llm_budget > 0 and severity in ("CRITICAL", "HIGH"):
+                llm_budget -= 1
+                narrative = await self.llm.generate_structured(
+                    system_prompt="Write concise business impact and code-level remediation for a verified API finding.",
+                    untrusted_context={
+                        "endpoint": finding.canonical_endpoint,
+                        "method": finding.method,
+                        "vuln_class": finding.vuln_class,
+                        "parameter": finding.affected_parameter,
+                        "severity": severity,
+                    },
+                    response_model=RemediationNarrative,
+                    deterministic_fallback=default_narr,
+                )
+            else:
+                narrative = default_narr
 
             hitl_needed = severity in ("HIGH", "CRITICAL")
             ticket = TriagedTicket(

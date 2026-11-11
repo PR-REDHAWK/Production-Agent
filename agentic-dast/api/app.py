@@ -38,6 +38,7 @@ class ScanRunRequest(BaseModel):
     delta_only: bool = False
     use_playwright: bool = False
     auto_approve_hitl_execution: bool = True
+    background: bool = False
 
 
 class HITLDecisionRequest(BaseModel):
@@ -49,6 +50,7 @@ class SimSwitchRequest(BaseModel):
     reset_state: bool = True
     trigger_webhook: bool = False
     is_fix_deploy: bool | None = None
+    background: bool = False
 
 
 class ControlPlaneState:
@@ -94,6 +96,7 @@ class ControlPlaneState:
         self._canary_server: HTTPServer | None = None
         self._canary_thread: threading.Thread | None = None
         self._scan_lock = asyncio.Lock()
+        self._background_tasks: set[asyncio.Task[Any]] = set()
 
         self.orchestrator = OrchestratorAgent(
             gateway=self.gateway,
@@ -148,6 +151,9 @@ class ControlPlaneState:
             logger.warning("Could not bind local OOB canary on 127.0.0.1:8002: %s", exc)
 
     def shutdown(self) -> None:
+        for task in list(self._background_tasks):
+            task.cancel()
+        self._background_tasks.clear()
         if self._canary_server is not None:
             self._canary_server.shutdown()
             self._canary_server.server_close()
@@ -233,9 +239,39 @@ def create_control_app(
             "canary_hits": len(state.canary_hits),
         }
 
+    def _launch_background(coro: Any, label: str) -> None:
+        async def _runner() -> None:
+            try:
+                async with state._scan_lock:
+                    await coro()
+                state.orchestrator._emit("scan_complete", f"{label} finished")
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Background %s failed: %s", label, exc)
+                state.orchestrator._emit("scan_error", f"{label} failed: {exc}")
+
+        task = asyncio.create_task(_runner())
+        state._background_tasks.add(task)
+        task.add_done_callback(state._background_tasks.discard)
+
     @app.post("/api/scans/run")
     async def run_scan(req: ScanRunRequest | None = None) -> dict[str, Any]:
         body = req or ScanRunRequest()
+        if body.background:
+            _launch_background(
+                lambda: state.orchestrator.run_cycle(
+                    change_event=ChangeEvent(
+                        trigger_type="manual",
+                        summary="Control-plane triggered scan",
+                        delta_paths=[],
+                    ),
+                    use_playwright=body.use_playwright,
+                    delta_only=body.delta_only,
+                    auto_approve_hitl_execution=body.auto_approve_hitl_execution,
+                ),
+                "Full scan",
+            )
+            return {"status": "started"}
+
         async with state._scan_lock:
             report = await state.orchestrator.run_cycle(
                 change_event=ChangeEvent(
@@ -275,15 +311,26 @@ def create_control_app(
         webhook_result: dict[str, Any] | None = None
         if req.trigger_webhook:
             is_fix = req.is_fix_deploy if req.is_fix_deploy is not None else (req.version == "v1.2")
+            deploy_ev = DeployWebhookEvent(
+                commit=f"sim-{req.version}",
+                changed_services=["bookings", "users", "suppliers", "pricing", "legacy"],
+                release_notes=f"Simulated deploy {req.version}",
+                environment="staging",
+                is_fix_deploy=is_fix,
+            )
+            if req.background:
+                _launch_background(
+                    lambda: state.orchestrator.handle_deploy_webhook(
+                        deploy_ev,
+                        auto_approve_hitl_execution=True,
+                    ),
+                    f"Deploy {req.version}",
+                )
+                return {"status": "started", "version": state.mock_app.state.sim.version, "webhook_result": None}
+
             async with state._scan_lock:
                 res = await state.orchestrator.handle_deploy_webhook(
-                    DeployWebhookEvent(
-                        commit=f"sim-{req.version}",
-                        changed_services=["bookings", "users", "suppliers", "pricing", "legacy"],
-                        release_notes=f"Simulated deploy {req.version}",
-                        environment="staging",
-                        is_fix_deploy=is_fix,
-                    ),
+                    deploy_ev,
                     auto_approve_hitl_execution=True,
                 )
                 webhook_result = res.model_dump()

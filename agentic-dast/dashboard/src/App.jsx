@@ -97,8 +97,18 @@ export default function App() {
           }
           return [parsed, ...prev].slice(0, 80)
         })
-        if (['triage_report', 'retest', 'hitl_decision', 'sim_switch'].includes(parsed.stage)) {
+        if (['recon', 'inventory', 'execute_safely', 'verify', 'triage_report', 'retest', 'hitl_decision', 'sim_switch', 'scan_complete', 'scan_error'].includes(parsed.stage)) {
           refreshAll()
+        }
+        if (['recon', 'inventory', 'plan_attacks', 'execute_safely', 'verify', 'triage_report', 'retest'].includes(parsed.stage)) {
+          setBusyAction((curr) => (curr ? `${parsed.stage}: ${parsed.message}` : curr))
+        }
+        if (parsed.stage === 'scan_complete') {
+          setBusyAction('')
+        }
+        if (parsed.stage === 'scan_error') {
+          setBusyAction('')
+          setErrorMsg(parsed.message)
         }
       } catch {
         // Ignore malformed event payloads
@@ -112,15 +122,17 @@ export default function App() {
     [tickets, selectedTicketId]
   )
 
-  const runAction = async (label, fn) => {
+  const runAction = async (label, fn, { background = false } = {}) => {
     setBusyAction(label)
     setErrorMsg('')
     try {
       await fn()
       await refreshAll()
+      if (!background) {
+        setBusyAction('')
+      }
     } catch (err) {
       setErrorMsg(err.message)
-    } finally {
       setBusyAction('')
     }
   }
@@ -175,8 +187,14 @@ export default function App() {
             <button
               disabled={Boolean(busyAction)}
               onClick={() =>
-                runAction('Running full scan...', () =>
-                  apiJson('/api/scans/run', { method: 'POST', body: JSON.stringify({ auto_approve_hitl_execution: true }) })
+                runAction(
+                  'Running full scan...',
+                  () =>
+                    apiJson('/api/scans/run', {
+                      method: 'POST',
+                      body: JSON.stringify({ auto_approve_hitl_execution: true, background: true }),
+                    }),
+                  { background: true }
                 )
               }
               className="rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-500 disabled:opacity-50"
@@ -186,11 +204,20 @@ export default function App() {
             <button
               disabled={Boolean(busyAction)}
               onClick={() =>
-                runAction('Deploying v1.1 (vulnerable)...', () =>
-                  apiJson('/api/sim/switch', {
-                    method: 'POST',
-                    body: JSON.stringify({ version: 'v1.1', reset_state: true, trigger_webhook: true, is_fix_deploy: false }),
-                  })
+                runAction(
+                  'Deploying v1.1 (vulnerable)...',
+                  () =>
+                    apiJson('/api/sim/switch', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        version: 'v1.1',
+                        reset_state: true,
+                        trigger_webhook: true,
+                        is_fix_deploy: false,
+                        background: true,
+                      }),
+                    }),
+                  { background: true }
                 )
               }
               className="rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/25 disabled:opacity-50"
@@ -200,11 +227,20 @@ export default function App() {
             <button
               disabled={Boolean(busyAction)}
               onClick={() =>
-                runAction('Deploying v1.2 (fix + auto-retest)...', () =>
-                  apiJson('/api/sim/switch', {
-                    method: 'POST',
-                    body: JSON.stringify({ version: 'v1.2', reset_state: true, trigger_webhook: true, is_fix_deploy: true }),
-                  })
+                runAction(
+                  'Deploying v1.2 (fix + auto-retest)...',
+                  () =>
+                    apiJson('/api/sim/switch', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        version: 'v1.2',
+                        reset_state: true,
+                        trigger_webhook: true,
+                        is_fix_deploy: true,
+                        background: true,
+                      }),
+                    }),
+                  { background: true }
                 )
               }
               className="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-50"
