@@ -21,6 +21,7 @@ class EndpointRecord(BaseModel):
     method: str
     canonical_path: str
     sample_paths: list[str] = Field(default_factory=list)
+    role_sample_paths: dict[str, list[str]] = Field(default_factory=dict)
     sources: list[str] = Field(default_factory=list)
     roles: list[str] = Field(default_factory=list)
     params: list[str] = Field(default_factory=list)

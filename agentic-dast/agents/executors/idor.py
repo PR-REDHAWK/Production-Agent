@@ -25,25 +25,65 @@ class IDORExecutor:
         self.base_url = base_url.rstrip("/")
         self._async_transport = async_transport
 
+    @staticmethod
+    def _candidate_target_paths(task: AttackTask) -> list[str]:
+        """Collect dynamically observed resource paths belonging to Agency A / shared logs before fallback."""
+        canonical = task.canonical_path
+        candidates: list[str] = []
+        beta_only = set(task.role_sample_paths.get("agency_b_admin", []))
+
+        for role in ("agency_a_admin", "agency_a_subagent"):
+            for sp in task.role_sample_paths.get(role, []):
+                if sp != canonical and "{" not in sp and sp not in candidates:
+                    candidates.append(sp)
+
+        for sp in task.sample_paths:
+            if sp != canonical and "{" not in sp and sp not in beta_only and sp not in candidates:
+                candidates.append(sp)
+
+        if not candidates and "{id}" in canonical:
+            candidates.append(canonical.replace("{id}", "1001"))
+        return candidates[:3]
+
     async def execute(self, task: AttackTask) -> list[CandidateFinding]:
         candidates: list[CandidateFinding] = []
         path = task.canonical_path
 
-        if "/bookings/{id}" in path and task.method == "GET":
-            target_path = path.replace("{id}", "1001")
-            async with SafeAsyncClient(
-                self.gateway, agent="executor_idor", actor="agency_a_admin", pace=True, inner_transport=self._async_transport
-            ) as alpha_client:
-                base_resp = await alpha_client.get(f"{self.base_url}{target_path}")
+        if (
+            "/bookings/{id}" in path
+            or ("{id}" in path and any(tag in task.sensitivity_tags for tag in ("BOOKINGS", "PII_TRAVELLER", "PAYMENTS_CREDIT")))
+        ) and task.method == "GET":
+            for target_path in self._candidate_target_paths(task):
+                async with SafeAsyncClient(
+                    self.gateway, agent="executor_idor", actor="agency_a_admin", pace=True, inner_transport=self._async_transport
+                ) as alpha_client:
+                    base_resp = await alpha_client.get(f"{self.base_url}{target_path}")
+                if base_resp.status_code != 200:
+                    continue
 
-            async with SafeAsyncClient(
-                self.gateway, agent="executor_idor", actor="agency_b_admin", pace=True, inner_transport=self._async_transport
-            ) as beta_client:
-                exploit_resp = await beta_client.get(f"{self.base_url}{target_path}")
+                async with SafeAsyncClient(
+                    self.gateway, agent="executor_idor", actor="agency_b_admin", pace=True, inner_transport=self._async_transport
+                ) as beta_client:
+                    exploit_resp = await beta_client.get(f"{self.base_url}{target_path}")
+                if exploit_resp.status_code != 200:
+                    continue
 
-            if base_resp.status_code == 200 and exploit_resp.status_code == 200:
-                body = exploit_resp.json()
-                if body.get("agency_id") == "AGENCY_ALPHA":
+                try:
+                    base_body = base_resp.json()
+                    exploit_body = exploit_resp.json()
+                except Exception:  # noqa: BLE001
+                    continue
+                if not isinstance(base_body, dict) or not isinstance(exploit_body, dict):
+                    continue
+
+                ownership_field = next(
+                    (f for f in ("agency_id", "tenant_id", "org_id", "owner_agency") if base_body.get(f) is not None),
+                    None,
+                )
+                if ownership_field is None:
+                    continue
+                victim_value = base_body.get(ownership_field)
+                if exploit_body.get(ownership_field) == victim_value:
                     candidates.append(
                         CandidateFinding(
                             candidate_id=f"CAND-{uuid.uuid4().hex[:8].upper()}",
@@ -53,16 +93,20 @@ class IDORExecutor:
                             method="GET",
                             affected_parameter="id",
                             title=f"Cross-Agency IDOR on {path}",
-                            summary="Agency Beta admin accessed Agency Alpha booking and traveller PII.",
+                            summary=(
+                                f"Agency Beta admin accessed Agency Alpha resource {target_path} "
+                                f"({ownership_field}={victim_value})."
+                            ),
                             baseline_step=HttpStepSpec(method="GET", path=target_path, actor="agency_a_admin"),
                             exploit_step=HttpStepSpec(method="GET", path=target_path, actor="agency_b_admin"),
                             oracle=AssertionOracle(
                                 oracle_type="cross_agency_leak",
-                                target_field="agency_id",
-                                forbidden_value="AGENCY_ALPHA",
+                                target_field=ownership_field,
+                                forbidden_value=victim_value,
                             ),
                         )
                     )
+                    break
 
         if "/users/me" in path and task.method == "PATCH":
             async with SafeAsyncClient(

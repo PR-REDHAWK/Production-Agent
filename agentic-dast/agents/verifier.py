@@ -5,6 +5,7 @@ Per rules.md §5: The verifier must be code-based. Never let an LLM decide 'conf
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import shlex
@@ -47,13 +48,52 @@ class VerifierAgent:
         self,
         gateway: SafetyGateway,
         base_url: str = "http://127.0.0.1:8001",
+        canary_base_url: str = "http://127.0.0.1:8002",
         async_transport: httpx.AsyncBaseTransport | None = None,
         hitl_approval_id: str | None = None,
     ) -> None:
         self.gateway = gateway
         self.base_url = base_url.rstrip("/")
+        self.canary_base_url = canary_base_url.rstrip("/")
         self._async_transport = async_transport
         self.hitl_approval_id = hitl_approval_id
+
+    @staticmethod
+    def _replace_canary_id(step: HttpStepSpec, old_id: str, new_id: str) -> HttpStepSpec:
+        if not old_id or old_id == new_id:
+            return step
+        new_path = step.path.replace(old_id, new_id)
+        new_params = {k: v.replace(old_id, new_id) for k, v in step.params.items()}
+        new_body = None
+        if step.json_body is not None:
+            new_body = {
+                k: (v.replace(old_id, new_id) if isinstance(v, str) else v)
+                for k, v in step.json_body.items()
+            }
+        return step.model_copy(update={"path": new_path, "params": new_params, "json_body": new_body})
+
+    async def _query_canary_hits(self, canary_id: str) -> int | None:
+        """Query the OOB canary listener via SafetyGateway for a fresh replay canary token."""
+        async with SafeAsyncClient(
+            self.gateway,
+            agent="verifier_canary",
+            actor="unauthenticated",
+            pace=False,
+            inner_transport=None,
+        ) as canary_client:
+            for attempt in range(2):
+                try:
+                    resp = await canary_client.get(f"{self.canary_base_url}/canary/__hits/{canary_id}")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if isinstance(data, dict) and "hit_count" in data:
+                            count = int(data["hit_count"])
+                            if count > 0 or attempt == 1:
+                                return count
+                            await asyncio.sleep(0.05)
+                except Exception:  # noqa: BLE001
+                    return None
+        return None
 
     @staticmethod
     def _build_repro_curl(base_url: str, step: HttpStepSpec) -> str:
@@ -270,8 +310,30 @@ class VerifierAgent:
 
         # Step 2: Exploit replay & deterministic oracle
         exploit_step = self._substitute_step(candidate.exploit_step, vars_map)
+        replay_canary_id: str | None = None
+        if candidate.oracle.oracle_type == "ssrf_canary" and candidate.oracle.canary_id:
+            replay_canary_id = uuid.uuid4().hex[:8]
+            exploit_step = self._replace_canary_id(exploit_step, candidate.oracle.canary_id, replay_canary_id)
+
         exploit_resp = await self._send_step(exploit_step)
-        confirmed, evidence = self._evaluate_oracle(candidate, exploit_resp)
+        if candidate.oracle.oracle_type == "ssrf_canary" and replay_canary_id:
+            hit_count = await self._query_canary_hits(replay_canary_id)
+            if hit_count is not None:
+                if hit_count > 0 and exploit_resp.status_code in (200, 202):
+                    confirmed = True
+                    evidence: dict[str, Any] = {
+                        "status": exploit_resp.status_code,
+                        "oob_canary_id": replay_canary_id,
+                        "oob_hit_count": hit_count,
+                        "oob_confirmed": True,
+                    }
+                else:
+                    confirmed = False
+                    evidence = {}
+            else:
+                confirmed, evidence = self._evaluate_oracle(candidate, exploit_resp)
+        else:
+            confirmed, evidence = self._evaluate_oracle(candidate, exploit_resp)
         if not confirmed:
             return None
 

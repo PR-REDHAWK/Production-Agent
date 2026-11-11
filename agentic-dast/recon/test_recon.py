@@ -89,7 +89,82 @@ async def test_recon_playwright_real_chromium_crawl(tmp_path: Path) -> None:
 
         crawled = await recon.discover_from_ui_playwright(roles=["agency_a_admin"])
         assert crawled == ["agency_a_admin"]
-        assert gw.metrics()["allowed_requests"] >= 2
+        assert gw.metrics()["allowed_requests"] >= 6
+
+        endpoints = kg.list_endpoints()
+        pw_paths = {(ep.method, ep.canonical_path) for ep in endpoints if "playwright_ui" in ep.sources}
+        assert ("POST", "/api/v3/auth/login") in pw_paths
+        assert ("GET", "/api/v3/search") in pw_paths
+        assert ("GET", "/api/v3/bookings") in pw_paths
+        assert ("GET", "/api/v3/users/me") in pw_paths
+
+        search_ep = kg.get_endpoint("GET", "/api/v3/search")
+        assert search_ep is not None
+        assert search_ep.params.get("city") == "query"
+        assert "results" in search_ep.response_fields
+
+        hold_ep = kg.get_endpoint("POST", "/api/v3/holds")
+        assert hold_ep is not None
+        assert hold_ep.params.get("item_id") == "body"
+        assert "hold_id" in hold_ep.response_fields
     finally:
         server.should_exit = True
         thread.join(timeout=3.0)
+
+
+def test_har_and_nginx_access_log_ingestion(tmp_path: Path) -> None:
+    import json
+
+    har_file = tmp_path / "journey.har"
+    har_doc = {
+        "log": {
+            "version": "1.2",
+            "entries": [
+                {
+                    "startedDateTime": "2026-11-11T10:00:00Z",
+                    "request": {
+                        "method": "POST",
+                        "url": "https://staging.example.test/api/v3/bookings?currency=USD",
+                        "headers": [{"name": "User-Agent", "value": "Mozilla/5.0"}],
+                        "queryString": [{"name": "currency", "value": "USD"}],
+                        "postData": {"text": json.dumps({"hold_id": "H1", "traveller_name": "Test"})},
+                    },
+                    "response": {
+                        "status": 200,
+                        "content": {"text": json.dumps({"booking_id": "BK-9", "total_fare": 150.0})},
+                    },
+                },
+                {
+                    "startedDateTime": "2026-11-11T10:00:01Z",
+                    "request": {"method": "GET", "url": "https://staging.example.test/assets/app.js"},
+                    "response": {"status": 200},
+                },
+                {
+                    "startedDateTime": "2026-11-11T10:00:02Z",
+                    "request": {"method": "GET", "url": "https://staging.example.test/wp-login.php"},
+                    "response": {"status": 404},
+                },
+            ],
+        }
+    }
+    har_file.write_text(json.dumps(har_doc), encoding="utf-8")
+
+    kg = AppKnowledgeGraph(CONFIGS_DIR / "ownership.json")
+    gw, _ = _make_gateway(tmp_path, app=None)
+    recon = ReconAgent(gateway=gw, graph=kg)
+    count = recon.ingest_har_or_gateway_logs(har_file)
+    assert count == 1
+
+    ep = next(e for e in kg.list_endpoints() if e.canonical_path == "/api/v3/bookings")
+    assert set(ep.params) == {"currency", "hold_id", "traveller_name"}
+    assert set(ep.response_fields) == {"booking_id", "total_fare"}
+
+    nginx_file = tmp_path / "access.log"
+    nginx_file.write_text(
+        '10.0.0.1 - - [11/Nov/2026:10:05:00 +0000] "GET /internal/partner-sync?page=2 HTTP/1.1" 200 128 "-" "partner-cron/2.1"\n'
+        '10.0.0.2 - - [11/Nov/2026:10:05:05 +0000] "GET /.env HTTP/1.1" 404 19 "-" "bot/1.0"\n',
+        encoding="utf-8",
+    )
+    nginx_count = recon.ingest_har_or_gateway_logs(nginx_file)
+    assert nginx_count == 1
+    assert any(e.canonical_path == "/internal/partner-sync" for e in kg.list_endpoints())

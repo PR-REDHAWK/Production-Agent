@@ -5,13 +5,20 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import socket
+import ssl
 from pathlib import Path
 from typing import Literal
 
 import httpx
 from pydantic import BaseModel, Field
 
-from recon.crawler import extract_api_paths_from_js, extract_script_urls_from_html, normalize_path
+from recon.crawler import (
+    extract_api_paths_from_js,
+    extract_script_urls_from_html,
+    normalize_path,
+    parse_traffic_records,
+)
 from safety.gateway import SafeAsyncClient, SafetyGateway
 
 _PATH_HINT_RE = re.compile(r"(/[A-Za-z0-9_./{}-]+)")
@@ -132,34 +139,26 @@ class BundleWatcher:
 
 
 class LogDeltaWatcher:
-    """Watches gateway access logs incrementally and emits delta paths (ignoring 404 noise)."""
+    """Watches HAR, JSONL, or NGINX access logs incrementally and emits delta paths (ignoring 404 noise)."""
 
     def __init__(self, logs_path: Path) -> None:
         self.logs_path = Path(logs_path)
-        self._seen_lines = 0
+        self._seen_records = 0
         self._known_paths: set[str] = set()
 
     def poll_once(self) -> ChangeEvent | None:
-        if not self.logs_path.exists():
-            return None
-        lines = self.logs_path.read_text(encoding="utf-8").splitlines()
-        if len(lines) <= self._seen_lines:
+        records = parse_traffic_records(self.logs_path)
+        if len(records) <= self._seen_records:
             return None
 
-        new_lines = lines[self._seen_lines :]
-        self._seen_lines = len(lines)
+        new_records = records[self._seen_records :]
+        self._seen_records = len(records)
 
         delta: list[str] = []
-        for raw in new_lines:
-            if not raw.strip():
-                continue
-            row = json.loads(raw)
-            if int(row.get("status", 0)) == 404:
-                continue
-            norm = normalize_path(str(row.get("path", "/")))
-            if norm not in self._known_paths:
-                self._known_paths.add(norm)
-                delta.append(norm)
+        for rec in new_records:
+            if rec.canonical_path not in self._known_paths:
+                self._known_paths.add(rec.canonical_path)
+                delta.append(rec.canonical_path)
 
         if not delta:
             return None
@@ -171,15 +170,51 @@ class LogDeltaWatcher:
 
 
 class DNSCertWatcher:
-    """Monitors approved host/port scope snapshot for newly introduced hosts/subdomains."""
+    """Monitors approved hosts, DNS A/AAAA resolution records, and TLS cert serials for drift."""
 
-    def __init__(self, gateway: SafetyGateway) -> None:
+    def __init__(
+        self,
+        gateway: SafetyGateway,
+        *,
+        probe_network: bool = False,
+        tls_timeout: float = 2.0,
+    ) -> None:
         self.gateway = gateway
+        self.probe_network = probe_network
+        self._tls_timeout = tls_timeout
         self._known_hosts: set[str] = set()
+
+    def _resolve_host_state(self, host: str, ports: list[int]) -> str:
+        """Resolve DNS records and optional TLS certificate serial for an approved host."""
+        if not self.probe_network:
+            return "static"
+        port_hint = ports[0] if ports else 443
+        ips: set[str] = set()
+        try:
+            for _, _, _, _, sockaddr in socket.getaddrinfo(host, port_hint, type=socket.SOCK_STREAM):
+                if sockaddr:
+                    ips.add(str(sockaddr[0]))
+        except OSError:
+            ips.add("unresolved")
+
+        cert_tag = "tls_none"
+        if 443 in ports:
+            try:
+                ctx = ssl.create_default_context()
+                with socket.create_connection((host, 443), timeout=self._tls_timeout) as raw_sock:
+                    with ctx.wrap_socket(raw_sock, server_hostname=host) as tls_sock:
+                        cert = tls_sock.getpeercert() or {}
+                        cert_tag = str(cert.get("serialNumber") or "tls_present")
+            except OSError:
+                cert_tag = "tls_unavailable"
+            except ssl.SSLError:
+                cert_tag = "tls_error"
+
+        return f"{','.join(sorted(ips))}|{cert_tag}"
 
     def poll_once(self) -> ChangeEvent | None:
         current_hosts = {
-            f"{t.name}:{h}"
+            f"{t.name}:{h}:{self._resolve_host_state(h, t.ports)}"
             for t in self.gateway.scope_config.approved_targets
             for h in t.hosts
         }
@@ -192,6 +227,6 @@ class DNSCertWatcher:
             return None
         return ChangeEvent(
             trigger_type="dns_cert",
-            summary=f"New approved host entries observed: {', '.join(added)}",
+            summary=f"Approved host/DNS/TLS changes observed: {', '.join(added)}",
             delta_paths=[],
         )

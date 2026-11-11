@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import shutil
 import subprocess
 import uuid
@@ -29,6 +30,29 @@ class InjectionSSRFExecutor:
         self.canary_base_url = canary_base_url.rstrip("/")
         self._async_transport = async_transport
 
+    async def _query_canary_hits(self, canary_id: str) -> int | None:
+        """Independently check OOB canary listener hits through SafetyGateway."""
+        async with SafeAsyncClient(
+            self.gateway,
+            agent="executor_injection_ssrf_canary",
+            actor="unauthenticated",
+            pace=False,
+            inner_transport=None,
+        ) as canary_client:
+            for attempt in range(2):
+                try:
+                    resp = await canary_client.get(f"{self.canary_base_url}/canary/__hits/{canary_id}")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if isinstance(data, dict) and "hit_count" in data:
+                            count = int(data["hit_count"])
+                            if count > 0 or attempt == 1:
+                                return count
+                            await asyncio.sleep(0.05)
+                except Exception:  # noqa: BLE001
+                    return None
+        return None
+
     async def execute(self, task: AttackTask) -> list[CandidateFinding]:
         candidates: list[CandidateFinding] = []
         path = task.canonical_path
@@ -40,8 +64,10 @@ class InjectionSSRFExecutor:
             pace=True,
             inner_transport=self._async_transport,
         ) as client:
-            # 1. Safe SSRF check via local canary listener on POST /api/v3/suppliers/webhook-test
-            if "/suppliers/webhook-test" in path and task.method == "POST":
+            # 1. Safe SSRF check via local canary listener on webhook/callback POST endpoints
+            if (
+                "/suppliers/webhook-test" in path or "webhook" in path or "callback" in path
+            ) and task.method == "POST":
                 canary_id = uuid.uuid4().hex[:8]
                 canary_url = f"{self.canary_base_url}/canary/{canary_id}"
                 self.gateway.validator.check_payload_budget("callback_url", 1)
@@ -49,40 +75,52 @@ class InjectionSSRFExecutor:
                     f"{self.base_url}{path}",
                     json={"callback_url": canary_url, "event_type": "booking.confirmed"},
                 )
-                if resp.status_code == 200 and resp.json().get("status") == "dispatched":
-                    candidates.append(
-                        CandidateFinding(
-                            candidate_id=f"CAND-{uuid.uuid4().hex[:8].upper()}",
-                            vuln_class="Server-side risks",
-                            executor="injection_ssrf",
-                            canonical_endpoint=path,
-                            method="POST",
-                            affected_parameter="callback_url",
-                            title="SSRF via Unvalidated Supplier Webhook Callback URL",
-                            summary=f"Supplier webhook endpoint dispatched server-side callback to {canary_url}.",
-                            baseline_step=HttpStepSpec(
+                if resp.status_code in (200, 202):
+                    hit_count = await self._query_canary_hits(canary_id)
+                    try:
+                        body_json = resp.json()
+                    except Exception:  # noqa: BLE001
+                        body_json = {}
+                    body_dispatched = isinstance(body_json, dict) and body_json.get("status") == "dispatched"
+                    oob_confirmed = hit_count is not None and hit_count > 0
+                    if oob_confirmed or (hit_count is None and body_dispatched):
+                        candidates.append(
+                            CandidateFinding(
+                                candidate_id=f"CAND-{uuid.uuid4().hex[:8].upper()}",
+                                vuln_class="Server-side risks",
+                                executor="injection_ssrf",
+                                canonical_endpoint=path,
                                 method="POST",
-                                path=path,
-                                actor="agency_a_admin",
-                                json_body={
-                                    "callback_url": "https://approved-supplier.internal/hook",
-                                    "event_type": "booking.confirmed",
-                                },
-                            ),
-                            exploit_step=HttpStepSpec(
-                                method="POST",
-                                path=path,
-                                actor="agency_a_admin",
-                                json_body={"callback_url": canary_url, "event_type": "booking.confirmed"},
-                            ),
-                            oracle=AssertionOracle(
-                                oracle_type="ssrf_canary",
-                                target_field="status",
-                                forbidden_value="dispatched",
-                                canary_id=canary_id,
-                            ),
+                                affected_parameter="callback_url",
+                                title="SSRF via Unvalidated Supplier Webhook Callback URL",
+                                summary=(
+                                    f"Supplier webhook endpoint triggered confirmed OOB callback to {canary_url}."
+                                    if oob_confirmed
+                                    else f"Supplier webhook endpoint dispatched server-side callback to {canary_url}."
+                                ),
+                                baseline_step=HttpStepSpec(
+                                    method="POST",
+                                    path=path,
+                                    actor="agency_a_admin",
+                                    json_body={
+                                        "callback_url": "https://approved-supplier.internal/hook",
+                                        "event_type": "booking.confirmed",
+                                    },
+                                ),
+                                exploit_step=HttpStepSpec(
+                                    method="POST",
+                                    path=path,
+                                    actor="agency_a_admin",
+                                    json_body={"callback_url": canary_url, "event_type": "booking.confirmed"},
+                                ),
+                                oracle=AssertionOracle(
+                                    oracle_type="ssrf_canary",
+                                    target_field="status",
+                                    forbidden_value="dispatched",
+                                    canary_id=canary_id,
+                                ),
+                            )
                         )
-                    )
 
             # 2. Safe SQLi syntax-error & SSTI {{7*7}} probe on GET /api/v3/search
             if "/search" in path and task.method == "GET":

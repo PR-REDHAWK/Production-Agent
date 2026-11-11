@@ -205,6 +205,7 @@ class OrchestratorAgent:
         verifier = VerifierAgent(
             self.gateway,
             base_url=self.base_url,
+            canary_base_url=self.canary_base_url,
             async_transport=self._async_transport,
             hitl_approval_id=exec_approval_id,
         )
@@ -264,6 +265,7 @@ class OrchestratorAgent:
             verifier = VerifierAgent(
                 self.gateway,
                 base_url=self.base_url,
+                canary_base_url=self.canary_base_url,
                 async_transport=self._async_transport,
                 hitl_approval_id=exec_req.approval_id,
             )

@@ -20,6 +20,7 @@ async def test_control_plane_full_lifecycle_and_sse(tmp_path: Path) -> None:
         use_in_memory_mock=True,
         start_canary=True,
         audit_dir=tmp_path,
+        canary_port=0,
     )
     app.state.cp.orchestrator.llm = LLMAdapter(provider="deterministic")
     app.state.cp.start_local_canary()
@@ -90,5 +91,51 @@ async def test_control_plane_full_lifecycle_and_sse(tmp_path: Path) -> None:
             assert metrics_resp.status_code == 200
             assert metrics_resp.json()["metrics"]["allowed_requests"] > 0
             assert len(metrics_resp.json()["recent_audit"]) > 0
+            assert len(metrics_resp.json()["canary_hits"]) >= 1
+    finally:
+        app.state.cp.shutdown()
+
+
+async def test_watcher_polling_triggers_delta_scan_and_lifespan_loop(tmp_path: Path) -> None:
+    import json
+
+    log_file = tmp_path / "gateway.log"
+    log_file.write_text(
+        json.dumps({"method": "GET", "path": "/api/v3/search", "status": 200}) + "\n",
+        encoding="utf-8",
+    )
+    app = create_control_app(
+        configs_dir=BASE_DIR / "configs",
+        base_dir=BASE_DIR,
+        logs_path=log_file,
+        use_in_memory_mock=True,
+        start_canary=False,
+        audit_dir=tmp_path,
+        watch_interval_seconds=0.0,
+    )
+    app.state.cp.orchestrator.llm = LLMAdapter(provider="deterministic")
+    try:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://control-plane.local") as client:
+            # First poll catches initial JS bundle & gateway log baseline
+            first = await client.post("/api/watchers/poll")
+            assert first.status_code == 200
+            assert first.json()["detected_count"] >= 1
+
+            # Immediate repeat without changes produces 0 triggers
+            idle = await client.post("/api/watchers/poll")
+            assert idle.status_code == 200
+            assert idle.json()["detected_count"] == 0
+
+            # Append an unseen shadow route + bump target version -> detects delta changes
+            with log_file.open("a", encoding="utf-8") as fh:
+                fh.write('127.0.0.1 - - [11/Nov/2026:12:00:00 +0000] "GET /internal/shadow-export HTTP/1.1" 200 512\n')
+
+            delta = await client.post("/api/watchers/poll")
+            assert delta.status_code == 200
+            payload = delta.json()
+            assert payload["detected_count"] == 1
+            assert payload["triggered"][0]["event"]["trigger_type"] == "log_delta"
+            assert "/internal/shadow-export" in payload["triggered"][0]["event"]["delta_paths"]
     finally:
         app.state.cp.shutdown()

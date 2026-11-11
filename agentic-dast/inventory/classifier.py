@@ -12,7 +12,7 @@ import httpx
 
 from graph.knowledge_graph import AppKnowledgeGraph
 from inventory.models import InventoryEntry, InventoryReport, Recommendation
-from recon.crawler import normalize_path
+from recon.crawler import parse_traffic_records
 from safety.gateway import SafeAsyncClient, SafetyGateway
 
 _PII_PATTERNS: dict[str, re.Pattern[str]] = {
@@ -63,29 +63,16 @@ class InventoryAgent:
     @staticmethod
     def _parse_gateway_logs(logs_path: Path) -> dict[tuple[str, str], _LogStats]:
         stats: dict[tuple[str, str], _LogStats] = {}
-        if not Path(logs_path).exists():
-            return stats
-        for line in Path(logs_path).read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            status_code = int(row.get("status", 0))
-            if status_code == 404:
-                continue  # Ignore scanner 404 noise
-            method = str(row.get("method", "GET")).upper()
-            raw_path = str(row.get("path", "/"))
-            canon = normalize_path(raw_path)
-            key = (method, canon)
+        for rec in parse_traffic_records(logs_path):
+            key = (rec.method, rec.canonical_path)
             entry = stats.setdefault(key, _LogStats())
             entry.hit_count += 1
-            ts = str(row.get("timestamp", ""))
-            if ts and (entry.last_seen is None or ts > entry.last_seen):
-                entry.last_seen = ts
+            if rec.timestamp and (entry.last_seen is None or rec.timestamp > entry.last_seen):
+                entry.last_seen = rec.timestamp
             if entry.sample_path is None:
-                entry.sample_path = raw_path
-            ua = row.get("user_agent")
-            if ua:
-                entry.user_agents.add(str(ua))
+                entry.sample_path = rec.raw_path
+            if rec.user_agent:
+                entry.user_agents.add(rec.user_agent)
         return stats
 
     @staticmethod

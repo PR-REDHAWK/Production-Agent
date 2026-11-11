@@ -29,7 +29,13 @@ from mock_tbo_target.app import VersionLiteral, create_app as create_mock_target
 from safety.audit import AuditLogger
 from safety.gateway import SafeAsyncClient, SafetyGateway, load_scope_config
 from safety.vault import TestCredentialVault
-from triggers.watchers import ChangeEvent, DeployWebhookEvent
+from triggers.watchers import (
+    BundleWatcher,
+    ChangeEvent,
+    DNSCertWatcher,
+    DeployWebhookEvent,
+    LogDeltaWatcher,
+)
 
 logger = logging.getLogger("agentic_dast.api")
 
@@ -66,12 +72,21 @@ class ControlPlaneState:
         use_in_memory_mock: bool = True,
         start_canary: bool = True,
         audit_dir: Path | None = None,
+        watch_interval_seconds: float | None = None,
+        canary_port: int = 8002,
     ) -> None:
+        self.canary_port = int(canary_port)
+        self.canary_base_url = f"http://127.0.0.1:{canary_port}" if canary_port > 0 else "http://127.0.0.1:8002"
         self.configs_dir = configs_dir
         self.base_dir = base_dir
         self.logs_path = logs_path
         self.target_base_url = target_base_url.rstrip("/")
         self.use_in_memory_mock = use_in_memory_mock
+        if watch_interval_seconds is None:
+            env_interval = os.environ.get("DAST_WATCH_INTERVAL_SECONDS", "0").strip() or "0"
+            self.watch_interval_seconds = float(env_interval)
+        else:
+            self.watch_interval_seconds = float(watch_interval_seconds)
         self.mock_app = create_mock_target_app("v1.0") if use_in_memory_mock else None
         self._async_transport = httpx.ASGITransport(app=self.mock_app) if self.mock_app else None
 
@@ -97,6 +112,15 @@ class ControlPlaneState:
         self._canary_thread: threading.Thread | None = None
         self._scan_lock = asyncio.Lock()
         self._background_tasks: set[asyncio.Task[Any]] = set()
+        self.watcher_events: list[dict[str, Any]] = []
+
+        self.bundle_watcher = BundleWatcher(
+            self.gateway,
+            base_url=self.target_base_url,
+            async_transport=self._async_transport,
+        )
+        self.log_watcher = LogDeltaWatcher(self.logs_path)
+        self.dns_watcher = DNSCertWatcher(self.gateway, probe_network=not use_in_memory_mock)
 
         self.orchestrator = OrchestratorAgent(
             gateway=self.gateway,
@@ -108,14 +132,47 @@ class ControlPlaneState:
         )
         self._start_canary_flag = start_canary
 
+    async def poll_watchers_once(self) -> list[dict[str, Any]]:
+        """Poll BundleWatcher, LogDeltaWatcher, and DNSCertWatcher; trigger delta scans on changes."""
+        detected: list[ChangeEvent] = []
+        for ev in (
+            await self.bundle_watcher.poll_once(),
+            self.log_watcher.poll_once(),
+            self.dns_watcher.poll_once(),
+        ):
+            if ev is not None:
+                detected.append(ev)
+
+        triggered: list[dict[str, Any]] = []
+        for ev in detected:
+            ev_dict = ev.model_dump()
+            self.watcher_events.append(ev_dict)
+            self.orchestrator._emit(
+                "watcher_change",
+                ev.summary,
+                trigger_type=ev.trigger_type,
+                delta_paths=ev.delta_paths,
+            )
+            async with self._scan_lock:
+                report = await self.orchestrator.run_cycle(
+                    change_event=ev,
+                    delta_only=bool(ev.delta_paths),
+                    auto_approve_hitl_execution=True,
+                )
+            triggered.append({"event": ev_dict, "scan_summary": report.model_dump()})
+        return triggered
+
     def start_local_canary(self) -> None:
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                if sock.connect_ex(("127.0.0.1", 8002)) == 0:
-                    return
-        except OSError as exc:
-            logger.warning("Canary port check failed: %s", exc)
+        if self._canary_server is not None:
             return
+        if self.canary_port > 0:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    if sock.connect_ex(("127.0.0.1", self.canary_port)) == 0:
+                        return
+            except OSError as exc:
+                logger.warning("Canary port check failed: %s", exc)
+                return
 
         hits = self.canary_hits
 
@@ -133,7 +190,16 @@ class ControlPlaneState:
                 self.wfile.write(b"canary-ok")
 
             def do_GET(self) -> None:  # noqa: N802
-                hits.append({"path": self.path, "body": {}})
+                if self.path.startswith("/canary/__hits/"):
+                    cid = self.path.removeprefix("/canary/__hits/").split("?")[0]
+                    matched = [h for h in hits if cid and cid in str(h.get("path", ""))]
+                    payload = json.dumps({"canary_id": cid, "hit_count": len(matched), "hits": matched}).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json")
+                    self.end_headers()
+                    self.wfile.write(payload)
+                    return
+                hits.append({"path": self.path, "method": "GET", "body": {}})
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(b"canary-ok")
@@ -142,13 +208,19 @@ class ControlPlaneState:
                 return
 
         try:
-            srv = HTTPServer(("127.0.0.1", 8002), _CanaryHandler)
+            srv = HTTPServer(("127.0.0.1", self.canary_port), _CanaryHandler)
+            bound_port = int(srv.server_port)
+            self.canary_base_url = f"http://127.0.0.1:{bound_port}"
+            self.orchestrator.canary_base_url = self.canary_base_url
+            for target in self.gateway.scope_config.approved_targets:
+                if target.name == "local_oob_canary" and bound_port not in target.ports:
+                    target.ports.append(bound_port)
             thread = threading.Thread(target=srv.serve_forever, daemon=True)
             thread.start()
             self._canary_server = srv
             self._canary_thread = thread
         except OSError as exc:
-            logger.warning("Could not bind local OOB canary on 127.0.0.1:8002: %s", exc)
+            logger.warning("Could not bind local OOB canary on 127.0.0.1:%s: %s", self.canary_port, exc)
 
     def shutdown(self) -> None:
         for task in list(self._background_tasks):
@@ -187,6 +259,8 @@ def create_control_app(
     use_in_memory_mock: bool | None = None,
     start_canary: bool = True,
     audit_dir: Path | None = None,
+    watch_interval_seconds: float | None = None,
+    canary_port: int = 8002,
 ) -> FastAPI:
     resolved_base = base_dir or Path(__file__).resolve().parent.parent
     resolved_configs = configs_dir or Path(os.environ.get("DAST_CONFIGS_DIR", str(resolved_base / "configs")))
@@ -207,12 +281,29 @@ def create_control_app(
         use_in_memory_mock=in_memory,
         start_canary=start_canary,
         audit_dir=audit_dir,
+        watch_interval_seconds=watch_interval_seconds,
+        canary_port=canary_port,
     )
 
     @asynccontextmanager
     async def _lifespan(_: FastAPI) -> AsyncIterator[None]:
         if state._start_canary_flag:
             state.start_local_canary()
+
+        async def _watcher_loop() -> None:
+            while True:
+                try:
+                    await state.poll_watchers_once()
+                except asyncio.CancelledError:
+                    raise
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Background watcher poll error: %s", exc)
+                await asyncio.sleep(state.watch_interval_seconds)
+
+        if state.watch_interval_seconds > 0:
+            watch_task = asyncio.create_task(_watcher_loop())
+            state._background_tasks.add(watch_task)
+            watch_task.add_done_callback(state._background_tasks.discard)
         try:
             yield
         finally:
@@ -284,6 +375,11 @@ def create_control_app(
                 auto_approve_hitl_execution=body.auto_approve_hitl_execution,
             )
             return report.model_dump()
+
+    @app.post("/api/watchers/poll")
+    async def poll_watchers() -> dict[str, Any]:
+        triggered = await state.poll_watchers_once()
+        return {"detected_count": len(triggered), "triggered": triggered}
 
     @app.post("/webhooks/deploy")
     async def deploy_webhook(event: DeployWebhookEvent) -> dict[str, Any]:

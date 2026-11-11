@@ -76,6 +76,8 @@ class AttackTask(BaseModel):
     is_delta: bool = False
     sensitivity_tags: list[str] = Field(default_factory=list)
     hypotheses: list[str] = Field(default_factory=list)
+    sample_paths: list[str] = Field(default_factory=list)
+    role_sample_paths: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class AttackPlan(BaseModel):
@@ -95,7 +97,10 @@ class AttackPlannerAgent:
         path = ep.canonical_path.lower()
         selected: list[ExecutorName] = []
 
-        if "/bookings/{id}" in path and ep.method == "GET":
+        if (
+            "/bookings/{id}" in path
+            or ("{id}" in path and any(t in ep.sensitivity_tags for t in ("BOOKINGS", "PII_TRAVELLER", "PAYMENTS_CREDIT")))
+        ) and ep.method == "GET":
             selected.extend(["idor", "auth", "hygiene"])
         elif "/users/me" in path:
             selected.extend(["idor", "hygiene", "auth"])
@@ -211,6 +216,8 @@ class AttackPlannerAgent:
                     is_delta=is_delta,
                     sensitivity_tags=list(ep.sensitivity_tags),
                     hypotheses=hypotheses,
+                    sample_paths=list(ep.sample_paths),
+                    role_sample_paths={k: list(v) for k, v in ep.role_sample_paths.items()},
                 )
             )
 

@@ -85,3 +85,29 @@ def test_log_delta_and_dns_watchers(tmp_path: Path) -> None:
     )
     dns = DNSCertWatcher(gw)
     assert dns.poll_once() is None
+
+
+def test_dns_cert_watcher_detects_resolution_change(tmp_path: Path, monkeypatch) -> None:
+    gw = SafetyGateway(
+        load_scope_config(CONFIGS_DIR / "target_scope.yaml"),
+        TestCredentialVault(CONFIGS_DIR / "credentials.vault.json"),
+        AuditLogger(tmp_path / "audit.jsonl", tmp_path / "audit.db"),
+    )
+    watcher = DNSCertWatcher(gw, probe_network=True)
+
+    current_ip = ["127.0.0.1"]
+
+    def _fake_getaddrinfo(host: str, port: int, type: int = 0):
+        return [(2, 1, 6, "", (current_ip[0], port))]
+
+    monkeypatch.setattr("triggers.watchers.socket.getaddrinfo", _fake_getaddrinfo)
+    # Baseline poll establishes snapshot
+    assert watcher.poll_once() is None
+    assert watcher.poll_once() is None
+
+    # DNS IP shift triggers ChangeEvent
+    current_ip[0] = "127.0.0.2"
+    ev = watcher.poll_once()
+    assert ev is not None
+    assert ev.trigger_type == "dns_cert"
+    assert "127.0.0.2" in ev.summary

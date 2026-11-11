@@ -132,9 +132,17 @@ class AppKnowledgeGraph:
 
         existing_params: list[str] = []
         existing_resp: list[str] = []
+        existing_role_samples: dict[str, list[str]] = {}
         if ep_id in self.graph:
             existing_params = list(self.graph.nodes[ep_id].get("params", []))
             existing_resp = list(self.graph.nodes[ep_id].get("response_fields", []))
+            for r_key, r_paths in dict(self.graph.nodes[ep_id].get("role_sample_paths", {})).items():
+                existing_role_samples[str(r_key)] = list(r_paths)
+
+        if role and sample_path and sample_path != canonical_path:
+            bucket = existing_role_samples.setdefault(role, [])
+            if sample_path not in bucket:
+                bucket.append(sample_path)
 
         merged_params = sorted(set(existing_params + param_names))
         merged_resp = sorted(set(existing_resp + resp_keys))
@@ -146,6 +154,7 @@ class AppKnowledgeGraph:
             method=upper_method,
             canonical_path=canonical_path,
             sample_paths=[sample_path] if sample_path else [],
+            role_sample_paths=existing_role_samples,
             sources=[source],
             roles=[role] if role else [],
             params=merged_params,
@@ -201,6 +210,7 @@ class AppKnowledgeGraph:
                         method=data["method"],
                         canonical_path=data["canonical_path"],
                         sample_paths=list(data.get("sample_paths", [])),
+                        role_sample_paths={k: list(v) for k, v in dict(data.get("role_sample_paths", {})).items()},
                         sources=list(data.get("sources", [])),
                         roles=list(data.get("roles", [])),
                         params=list(data.get("params", [])),

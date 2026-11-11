@@ -9,7 +9,7 @@ import json
 import re
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import httpx
 from pydantic import BaseModel, Field
@@ -25,6 +25,10 @@ from safety.gateway import (
 _SCRIPT_SRC_RE = re.compile(r"""<script[^>]+src=["']([^"']+)["']""", re.IGNORECASE)
 _QUOTED_ROUTE_RE = re.compile(r"""["'`](/(?:api|internal|v\d+)/[A-Za-z0-9_./{}$:-]*)["'`]""")
 _TEMPLATE_VAR_RE = re.compile(r"\$\{[^}]+\}")
+_ACCESS_LOG_RE = re.compile(
+    r'^\S+\s+\S+\s+\S+\s+\[([^\]]+)\]\s+"([A-Z]+)\s+([^\s?"]+)(?:\?([^\s"]*))?\s+HTTP/[^"]+"\s+(\d{3})(?:\s+\S+\s+"[^"]*"\s+"([^"]*)")?'
+)
+_STATIC_ASSET_EXTS = (".css", ".js", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".map")
 _LEGACY_PROBE_PATHS = (
     "/api/v1/bookings/1001",
     "/api/v2/bookings/1001",
@@ -109,6 +113,136 @@ def extract_api_paths_from_js(js_text: str) -> list[str]:
     return discovered
 
 
+class TrafficRecord(BaseModel):
+    method: str
+    raw_path: str
+    canonical_path: str
+    status: int
+    timestamp: str | None = None
+    user_agent: str | None = None
+    params: dict[str, str] = Field(default_factory=dict)
+    response_fields: list[str] = Field(default_factory=list)
+
+
+def _extract_json_keys(raw_text: str | None) -> list[str]:
+    if not raw_text:
+        return []
+    try:
+        parsed = json.loads(raw_text)
+        if isinstance(parsed, dict):
+            return list(parsed.keys())
+        if isinstance(parsed, list) and parsed and isinstance(parsed[0], dict):
+            return list(parsed[0].keys())
+    except (json.JSONDecodeError, TypeError):
+        return []
+    return []
+
+
+def parse_traffic_records(logs_path: Path) -> list[TrafficRecord]:
+    """Parse browser HAR JSON, JSONL gateway logs, or NGINX/Apache combined access logs."""
+    path_obj = Path(logs_path)
+    if not path_obj.exists():
+        return []
+
+    raw_text = path_obj.read_text(encoding="utf-8")
+    stripped = raw_text.lstrip()
+    records: list[TrafficRecord] = []
+
+    # 1. Standard HAR 1.2 JSON file
+    if stripped.startswith("{"):
+        try:
+            har_doc = json.loads(raw_text)
+        except json.JSONDecodeError:
+            har_doc = None
+        if isinstance(har_doc, dict) and isinstance(har_doc.get("log"), dict) and "entries" in har_doc["log"]:
+            for entry in har_doc["log"].get("entries", []):
+                req = entry.get("request", {})
+                resp = entry.get("response", {})
+                status_code = int(resp.get("status", 0))
+                if status_code == 404:
+                    continue
+                parsed_url = urlparse(str(req.get("url", "/")))
+                raw_path = parsed_url.path or "/"
+                if raw_path.lower().endswith(_STATIC_ASSET_EXTS):
+                    continue
+                params: dict[str, str] = {}
+                for q_item in req.get("queryString", []):
+                    q_name = q_item.get("name")
+                    if q_name:
+                        params[str(q_name)] = "query"
+                for q_name in parse_qs(parsed_url.query).keys():
+                    params.setdefault(q_name, "query")
+                post_text = (req.get("postData") or {}).get("text")
+                for b_key in _extract_json_keys(post_text):
+                    params[b_key] = "body"
+                ua = next(
+                    (str(h.get("value")) for h in req.get("headers", []) if str(h.get("name", "")).lower() == "user-agent"),
+                    None,
+                )
+                resp_text = (resp.get("content") or {}).get("text")
+                records.append(
+                    TrafficRecord(
+                        method=str(req.get("method", "GET")).upper(),
+                        raw_path=raw_path,
+                        canonical_path=normalize_path(raw_path),
+                        status=status_code,
+                        timestamp=str(entry.get("startedDateTime")) if entry.get("startedDateTime") else None,
+                        user_agent=ua,
+                        params=params,
+                        response_fields=_extract_json_keys(resp_text),
+                    )
+                )
+            return records
+
+    # 2. Line-delimited JSONL or plain-text NGINX/Apache combined access logs
+    for line in raw_text.splitlines():
+        line_str = line.strip()
+        if not line_str:
+            continue
+        if line_str.startswith("{"):
+            row = json.loads(line_str)
+            status_code = int(row.get("status", 0))
+            if status_code == 404:
+                continue
+            parsed_url = urlparse(str(row.get("path", "/")))
+            raw_path = parsed_url.path or "/"
+            if raw_path.lower().endswith(_STATIC_ASSET_EXTS):
+                continue
+            q_params = {q: "query" for q in parse_qs(parsed_url.query).keys()}
+            records.append(
+                TrafficRecord(
+                    method=str(row.get("method", "GET")).upper(),
+                    raw_path=raw_path,
+                    canonical_path=normalize_path(raw_path),
+                    status=status_code,
+                    timestamp=str(row["timestamp"]) if row.get("timestamp") else None,
+                    user_agent=str(row["user_agent"]) if row.get("user_agent") else None,
+                    params=q_params,
+                )
+            )
+            continue
+
+        match = _ACCESS_LOG_RE.match(line_str)
+        if match:
+            ts, method, raw_path, raw_query, status_str, ua = match.groups()
+            status_code = int(status_str)
+            if status_code == 404 or raw_path.lower().endswith(_STATIC_ASSET_EXTS):
+                continue
+            q_params = {q: "query" for q in parse_qs(raw_query or "").keys()}
+            records.append(
+                TrafficRecord(
+                    method=method.upper(),
+                    raw_path=raw_path,
+                    canonical_path=normalize_path(raw_path),
+                    status=status_code,
+                    timestamp=ts,
+                    user_agent=ua,
+                    params=q_params,
+                )
+            )
+    return records
+
+
 class DiscoveryResult(BaseModel):
     discovered_endpoints: int
     js_routes: list[str] = Field(default_factory=list)
@@ -136,8 +270,30 @@ class ReconAgent:
         self,
         roles: list[str] | None = None,
     ) -> list[str]:
-        """Crawl UI in real headless Chromium via Playwright with all traffic gated by SafetyGateway."""
+        """Crawl UI flows in real headless Chromium via Playwright with all traffic gated by SafetyGateway."""
+        import asyncio
         from playwright.async_api import async_playwright  # declared in pyproject.toml
+
+        role_aliases: dict[str, tuple[str, ...]] = {
+            "agency_a_admin": ("agency alpha admin", "alpha admin", "agency a admin"),
+            "agency_a_subagent": ("agency alpha sub-agent", "agency alpha subagent", "alpha sub-agent", "sub-agent"),
+            "agency_b_admin": ("agency beta admin", "beta admin", "agency b admin"),
+        }
+        all_role_terms = tuple(term for terms in role_aliases.values() for term in terms)
+        destructive_terms = (
+            "logout",
+            "log out",
+            "sign out",
+            "delete",
+            "remove",
+            "destroy",
+            "wipe",
+            "reset",
+            "drop",
+            "purge",
+            "revoke",
+            "terminate",
+        )
 
         crawled: list[str] = []
         target_roles = roles or ["agency_a_admin", "agency_a_subagent", "agency_b_admin"]
@@ -152,28 +308,138 @@ class ReconAgent:
                         "**/*",
                         create_playwright_route_handler(self.gateway, agent="recon_playwright", actor=actor),
                     )
-                    captured_urls: list[tuple[str, str, int]] = []
+                    captured_entries: list[tuple[str, str, int, str | None, list[str]]] = []
+                    capture_tasks: list[asyncio.Task[None]] = []
+
+                    async def _capture_response(resp: Any) -> None:
+                        req = resp.request
+                        method = str(req.method)
+                        req_url = str(resp.url)
+                        status_code = int(resp.status)
+                        post_data: str | None = None
+                        try:
+                            post_data = req.post_data
+                        except Exception:  # noqa: BLE001
+                            post_data = None
+                        resp_text = ""
+                        try:
+                            if urlparse(req_url).path.startswith(("/api/", "/internal/")):
+                                resp_text = await resp.text()
+                        except Exception:  # noqa: BLE001
+                            resp_text = ""
+                        captured_entries.append(
+                            (
+                                method,
+                                req_url,
+                                status_code,
+                                post_data,
+                                _extract_json_keys(resp_text),
+                            )
+                        )
 
                     def _on_response(resp: Any) -> None:
-                        req = resp.request
-                        captured_urls.append((str(req.method), str(resp.url), int(resp.status)))
+                        capture_tasks.append(asyncio.create_task(_capture_response(resp)))
 
                     page.on("response", _on_response)
                     await page.goto(f"{self.base_url}/", wait_until="networkidle")
+
+                    # Step 1: Click matching demo role sign-in button if rendered
+                    actor_terms = role_aliases.get(actor, (actor.replace("_", " "),))
+                    other_role_terms = tuple(t for t in all_role_terms if t not in actor_terms)
+                    role_buttons = page.locator("button:visible")
+                    for idx in range(await role_buttons.count()):
+                        btn = role_buttons.nth(idx)
+                        label = " ".join((await btn.inner_text()).split()).strip().lower()
+                        if any(term in label for term in actor_terms):
+                            await btn.click(timeout=2000)
+                            await page.wait_for_load_state("networkidle")
+                            await page.wait_for_timeout(150)
+                            break
+
+                    # Step 2: Safely click non-destructive interactive flows & tabs (panel actions before top tabs)
+                    clicked_labels: set[str] = set()
+                    for _ in range(16):
+                        visible_controls = page.locator("button:visible, [role='tab']:visible")
+                        count = await visible_controls.count()
+                        raw_items: list[tuple[int, str, int, float]] = []
+                        for idx in range(count):
+                            el = visible_controls.nth(idx)
+                            if not await el.is_enabled():
+                                continue
+                            raw_label = " ".join((await el.inner_text()).split()).strip()
+                            lower_label = raw_label.lower()
+                            if not lower_label or lower_label in clicked_labels:
+                                continue
+                            if any(term in lower_label for term in destructive_terms):
+                                continue
+                            if any(term in lower_label for term in other_role_terms):
+                                continue
+                            if any(term in lower_label for term in actor_terms):
+                                clicked_labels.add(lower_label)
+                                continue
+                            nav_flag = await el.evaluate(
+                                """node => {
+                                    if (node.type === 'submit' || node.closest('form')) return 0;
+                                    if (node.getAttribute('role') === 'tab' || node.closest('nav, header, aside, [role="tablist"]')) return 2;
+                                    return 1;
+                                }"""
+                            )
+                            box = await el.bounding_box()
+                            y_pos = float(box["y"]) if box else 9999.0
+                            raw_items.append((idx, lower_label, int(nav_flag), y_pos))
+
+                        if not raw_items:
+                            break
+
+                        min_y = min(item[3] for item in raw_items)
+                        top_row_count = sum(1 for item in raw_items if item[3] <= min_y + 24.0)
+                        candidates: list[tuple[int, int, str]] = []
+                        for idx, lower_label, nav_flag, y_pos in raw_items:
+                            if nav_flag == 2:
+                                priority = 1
+                            elif nav_flag == 0:
+                                priority = 0
+                            elif top_row_count >= 2 and y_pos <= min_y + 24.0:
+                                priority = 1
+                            else:
+                                priority = 0
+                            candidates.append((priority, idx, lower_label))
+
+                        candidates.sort(key=lambda item: (item[0], item[1]))
+                        _, target_idx, chosen_label = candidates[0]
+                        clicked_labels.add(chosen_label)
+                        try:
+                            await visible_controls.nth(target_idx).click(timeout=2000)
+                            await page.wait_for_load_state("networkidle")
+                            await page.wait_for_timeout(150)
+                        except Exception:  # noqa: BLE001
+                            continue
+
+                    if capture_tasks:
+                        await asyncio.gather(*capture_tasks, return_exceptions=True)
+
                     crawled.append(actor)
 
-                    for method, req_url, status_code in captured_urls:
+                    for method, req_url, status_code, post_data, resp_fields in captured_entries:
                         parsed = urlparse(req_url)
-                        if parsed.path.startswith(("/api/", "/internal/")):
-                            canon = normalize_path(parsed.path)
-                            self.graph.add_endpoint(
-                                method=method,
-                                canonical_path=canon,
-                                source="playwright_ui",
-                                sample_path=parsed.path,
-                                role=actor,
-                                status_code=status_code,
-                            )
+                        if not parsed.path.startswith(("/api/", "/internal/")) or status_code == 404:
+                            continue
+                        params: dict[str, str] = {}
+                        for q_name in parse_qs(parsed.query).keys():
+                            params[q_name] = "query"
+                        for body_key in _extract_json_keys(post_data):
+                            params[body_key] = "body"
+                        canon = normalize_path(parsed.path)
+                        self.graph.add_endpoint(
+                            method=method,
+                            canonical_path=canon,
+                            source="playwright_ui",
+                            sample_path=parsed.path,
+                            role=actor,
+                            params=params or None,
+                            status_code=status_code,
+                            response_fields=resp_fields or None,
+                        )
                     await context.close()
             finally:
                 await browser.close()
@@ -249,16 +515,37 @@ class ReconAgent:
                     params={"item_id": "body", "quantity": "body"},
                 )
 
-                # 3. Read sample booking owned by Alpha (1001) or Beta (2001)
-                bk_id = "1001" if "agency_a" in actor else "2001"
-                bk_resp = await client.get(f"{self.base_url}/api/v3/bookings/{bk_id}")
-                self._record_http_observation(
-                    "GET",
-                    f"/api/v3/bookings/{bk_id}",
-                    actor,
-                    bk_resp,
-                    params={"id": "path"},
-                )
+                # 3. List actor's bookings dynamically and inspect concrete owned resource IDs
+                list_bk_resp = await client.get(f"{self.base_url}/api/v3/bookings")
+                self._record_http_observation("GET", "/api/v3/bookings", actor, list_bk_resp)
+                observed_ids: list[str] = []
+                if list_bk_resp.status_code == 200:
+                    try:
+                        list_payload = list_bk_resp.json()
+                        rows = (
+                            list_payload.get("bookings", [])
+                            if isinstance(list_payload, dict)
+                            else (list_payload if isinstance(list_payload, list) else [])
+                        )
+                        for row in rows:
+                            if isinstance(row, dict):
+                                raw_id = row.get("booking_id") or row.get("id")
+                                if raw_id is not None and str(raw_id) not in observed_ids:
+                                    observed_ids.append(str(raw_id))
+                    except Exception:  # noqa: BLE001
+                        observed_ids = []
+                if not observed_ids:
+                    observed_ids = ["1001" if "agency_a" in actor else "2001"]
+
+                for bk_id in observed_ids[:2]:
+                    bk_resp = await client.get(f"{self.base_url}/api/v3/bookings/{bk_id}")
+                    self._record_http_observation(
+                        "GET",
+                        f"/api/v3/bookings/{bk_id}",
+                        actor,
+                        bk_resp,
+                        params={"id": "path"},
+                    )
 
                 # 4. Book from hold if hold succeeded
                 if hold_resp.status_code == 200:
@@ -352,29 +639,19 @@ class ReconAgent:
         return hits
 
     def ingest_har_or_gateway_logs(self, logs_path: Path) -> int:
-        """Ingest recorded gateway logs (excluding 404 noise) into the Knowledge Graph."""
-        ingested = 0
-        if not Path(logs_path).exists():
-            return 0
-        for line in Path(logs_path).read_text(encoding="utf-8").splitlines():
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            status_code = int(row.get("status", 0))
-            if status_code == 404:
-                continue
-            method = str(row.get("method", "GET")).upper()
-            raw_path = str(row.get("path", "/"))
-            canon = normalize_path(raw_path)
+        """Ingest HAR JSON, JSONL gateway logs, or access logs (excluding 404 noise) into the Knowledge Graph."""
+        records = parse_traffic_records(logs_path)
+        for rec in records:
             self.graph.add_endpoint(
-                method=method,
-                canonical_path=canon,
+                method=rec.method,
+                canonical_path=rec.canonical_path,
                 source="gateway_log",
-                sample_path=raw_path,
-                status_code=status_code,
+                sample_path=rec.raw_path,
+                params=rec.params or None,
+                status_code=rec.status,
+                response_fields=rec.response_fields or None,
             )
-            ingested += 1
-        return ingested
+        return len(records)
 
     def _record_http_observation(
         self,
