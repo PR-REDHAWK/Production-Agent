@@ -12,6 +12,7 @@ approved_targets:
       - "/api/"
       - "/internal/"
       - "/static/"
+      - "/assets/"
       - "/__sim/"
       - "/"
     blocked_path_patterns:

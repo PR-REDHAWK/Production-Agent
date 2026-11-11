@@ -1,4 +1,4 @@
-"""Simulated B2B Travel Platform (Agency Alpha & Agency Beta).
+"""Simulated B2B Travel Platform (Agency Alpha & Agency Beta) backed by SQLite.
 
 Implements the travel lifecycle (search -> hold -> book -> pay -> confirm -> cancel -> refund)
 with toggleable deployment versions:
@@ -20,17 +20,17 @@ import json
 import os
 import time
 import uuid
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status
-from fastapi.responses import HTMLResponse, PlainTextResponse
-from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse
+from pydantic import BaseModel
 
-VersionLiteral = Literal["v1.0", "v1.1", "v1.2"]
+from mock_tbo_target.db import SQLiteTargetDB, VersionLiteral
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -82,142 +82,22 @@ def decode_jwt(token: str, secret: str | None = None) -> dict[str, Any]:
     return payload
 
 
-def _load_synthetic_users() -> dict[str, dict[str, Any]]:
-    vault_path = Path(__file__).resolve().parent.parent / "configs" / "credentials.vault.json"
-    default_users: dict[str, dict[str, Any]] = {
-        "alpha_admin@synthetic-travel.test": {
-            "user_id": "USR-ALPHA-1",
-            "username": "alpha_admin@synthetic-travel.test",
-            "password": os.environ.get("MOCK_ALPHA_ADMIN_PASS", "synth-alpha-admin-pass"),
-            "agency_id": "AGENCY_ALPHA",
-            "role": "admin",
-            "display_name": "Alpha Lead Admin",
-            "credit_limit": 50000.0,
-        },
-        "alpha_sub@synthetic-travel.test": {
-            "user_id": "USR-ALPHA-2",
-            "username": "alpha_sub@synthetic-travel.test",
-            "password": os.environ.get("MOCK_ALPHA_SUB_PASS", "synth-alpha-sub-pass"),
-            "agency_id": "AGENCY_ALPHA",
-            "role": "subagent",
-            "display_name": "Alpha Sub Agent",
-            "credit_limit": 5000.0,
-        },
-        "beta_admin@synthetic-travel.test": {
-            "user_id": "USR-BETA-1",
-            "username": "beta_admin@synthetic-travel.test",
-            "password": os.environ.get("MOCK_BETA_ADMIN_PASS", "synth-beta-admin-pass"),
-            "agency_id": "AGENCY_BETA",
-            "role": "admin",
-            "display_name": "Beta Lead Admin",
-            "credit_limit": 45000.0,
-        },
-    }
-    if vault_path.exists():
-        raw = json.loads(vault_path.read_text(encoding="utf-8"))
-        for actor in raw.get("actors", {}).values():
-            uname = actor.get("username")
-            if uname and uname in default_users:
-                env_key = actor.get("password_env", "")
-                default_users[uname]["password"] = os.environ.get(
-                    env_key, actor.get("default_synthetic_password", default_users[uname]["password"])
-                )
-    return default_users
-
-
-@dataclass
 class TargetState:
-    version: VersionLiteral = "v1.0"
-    users: dict[str, dict[str, Any]] = field(default_factory=dict)
-    revoked_tokens: set[str] = field(default_factory=set)
-    inventory: dict[str, dict[str, Any]] = field(default_factory=dict)
-    holds: dict[str, dict[str, Any]] = field(default_factory=dict)
-    bookings: dict[str, dict[str, Any]] = field(default_factory=dict)
-    coupons: dict[str, dict[str, Any]] = field(default_factory=dict)
+    """Compatibility facade over SQLiteTargetDB for app.state.sim."""
 
-    def reset(self, version: VersionLiteral | None = None) -> None:
-        if version is not None:
-            self.version = version
-        self.users = _load_synthetic_users()
-        self.revoked_tokens = set()
-        self.inventory = {
-            "INV-DEL-101": {
-                "item_id": "INV-DEL-101",
-                "type": "hotel",
-                "city": "New Delhi",
-                "title": "Grand Synthetic Residency",
-                "unit_fare": 150.0,
-                "currency": "USD",
-            },
-            "INV-DXB-202": {
-                "item_id": "INV-DXB-202",
-                "type": "flight",
-                "city": "Dubai",
-                "title": "Synthetic Air DEL-DXB",
-                "unit_fare": 320.0,
-                "currency": "USD",
-            },
-        }
-        self.coupons = {
-            "SAVE20": {"code": "SAVE20", "discount_amount": 20.0},
-            "CORP50": {"code": "CORP50", "discount_amount": 50.0},
-        }
-        self.holds = {
-            "HOLD-ALPHA-1": {
-                "hold_id": "HOLD-ALPHA-1",
-                "agency_id": "AGENCY_ALPHA",
-                "item_id": "INV-DEL-101",
-                "quantity": 2,
-                "quoted_fare": 300.0,
-                "discount_applied": 0.0,
-                "applied_coupons": [],
-            },
-            "HOLD-BETA-1": {
-                "hold_id": "HOLD-BETA-1",
-                "agency_id": "AGENCY_BETA",
-                "item_id": "INV-DXB-202",
-                "quantity": 1,
-                "quoted_fare": 320.0,
-                "discount_applied": 0.0,
-                "applied_coupons": [],
-            },
-        }
-        self.bookings = {
-            "1001": {
-                "booking_id": "1001",
-                "agency_id": "AGENCY_ALPHA",
-                "created_by": "USR-ALPHA-1",
-                "hold_id": "HOLD-ALPHA-1",
-                "item_id": "INV-DEL-101",
-                "quantity": 2,
-                "total_fare": 300.0,
-                "paid_amount": 300.0,
-                "refunded_amount": 0.0,
-                "payment_status": "PAID",
-                "status": "CONFIRMED",
-                "voucher_code": "VCH-ALPHA-1001",
-                "traveller_name": "Aarav Synthetic",
-                "traveller_passport": "SYNTH-PASS-ALPHA-001",
-                "traveller_email": "aarav.synth@synthetic-traveller.test",
-            },
-            "2001": {
-                "booking_id": "2001",
-                "agency_id": "AGENCY_BETA",
-                "created_by": "USR-BETA-1",
-                "hold_id": "HOLD-BETA-1",
-                "item_id": "INV-DXB-202",
-                "quantity": 1,
-                "total_fare": 320.0,
-                "paid_amount": 320.0,
-                "refunded_amount": 0.0,
-                "payment_status": "PAID",
-                "status": "CONFIRMED",
-                "voucher_code": "VCH-BETA-2001",
-                "traveller_name": "Mira Synthetic",
-                "traveller_passport": "SYNTH-PASS-BETA-001",
-                "traveller_email": "mira.synth@synthetic-traveller.test",
-            },
-        }
+    def __init__(self, db: SQLiteTargetDB) -> None:
+        self.db = db
+
+    @property
+    def version(self) -> VersionLiteral:
+        return self.db.get_version()
+
+    @version.setter
+    def version(self, value: VersionLiteral) -> None:
+        self.db.set_version(value)
+
+    def reset(self, version: VersionLiteral | None = None) -> VersionLiteral:
+        return self.db.reset(version=version)
 
 
 class SimVersionRequest(BaseModel):
@@ -257,31 +137,63 @@ class WebhookTestRequest(BaseModel):
     event_type: str = "booking.confirmed"
 
 
-def create_app(initial_version: VersionLiteral | None = None) -> FastAPI:
-    state = TargetState()
+def create_app(
+    initial_version: VersionLiteral | None = None,
+    db_path: str | Path | None = None,
+) -> FastAPI:
     env_ver = os.environ.get("MOCK_TBO_VERSION", "v1.0")
     chosen_ver: VersionLiteral = initial_version or (env_ver if env_ver in ("v1.0", "v1.1", "v1.2") else "v1.0")
-    state.reset(version=chosen_ver)
 
+    if db_path is not None:
+        resolved_db: str | Path = db_path
+    elif os.environ.get("PYTEST_CURRENT_TEST"):
+        resolved_db = ":memory:"
+    else:
+        resolved_db = Path(os.environ.get("MOCK_TBO_DB_PATH", str(Path(__file__).resolve().parent / "mock_tbo.db")))
+
+    db = SQLiteTargetDB(resolved_db, initial_version=chosen_ver)
+    if initial_version is not None:
+        db.set_version(initial_version)
+
+    state = TargetState(db)
     app = FastAPI(title="Mock TBO B2B Staging Target", version="1.0.0")
     app.state.sim = state
+    portal_dist = Path(__file__).resolve().parent / "portal" / "dist"
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://127.0.0.1:5174",
+            "http://localhost:5174",
+            "http://127.0.0.1:8001",
+            "http://localhost:8001",
+        ],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     def get_current_user(authorization: str | None = Header(default=None)) -> dict[str, Any]:
         if not authorization or not authorization.startswith("Bearer "):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
         token = authorization.removeprefix("Bearer ").strip()
-        if state.version != "v1.1" and token in state.revoked_tokens:
+        if state.version != "v1.1" and db.is_token_revoked(token):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revoked")
         claims = decode_jwt(token)
-        user = state.users.get(claims.get("sub", ""))
+        user = db.get_user(claims.get("sub", ""))
         if not user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unknown user")
         return {**user, "_token": token, "_claims": claims}
 
     # --- Simulation Control Endpoints ---
     @app.get("/__sim/version")
-    def get_sim_version() -> dict[str, str]:
-        return {"version": state.version}
+    def get_sim_version() -> dict[str, Any]:
+        return {
+            "version": state.version,
+            "db_backend": "sqlite",
+            "db_path": db.db_path,
+            "bookings_count": len(db.list_all_bookings()),
+        }
 
     @app.post("/__sim/version")
     def set_sim_version(req: SimVersionRequest) -> dict[str, str]:
@@ -290,26 +202,39 @@ def create_app(initial_version: VersionLiteral | None = None) -> FastAPI:
 
     @app.post("/__sim/reset")
     def reset_sim(req: SimVersionRequest | None = None) -> dict[str, str]:
-        state.reset(version=req.version if req else state.version)
-        return {"status": "reset", "version": state.version}
+        ver = state.reset(version=req.version if req else state.version)
+        return {"status": "reset", "version": ver}
 
     # --- Portal UI & Versioned JS Bundle (for Recon & Bundle Watcher) ---
     @app.get("/", response_class=HTMLResponse)
-    def portal_index() -> str:
-        return (
-            "<!DOCTYPE html><html><head><title>TBO B2B Agent Portal (Mock)</title></head>"
-            f"<body><h1>TBO B2B Partner Portal ({state.version})</h1>"
-            "<div id='app'>Search, Hold, Book, Pay, Cancel, Refund</div>"
-            "<script src='/static/app.js'></script></body></html>"
+    def portal_index() -> Response:
+        dist_index = portal_dist / "index.html"
+        if dist_index.is_file():
+            return HTMLResponse(content=dist_index.read_text(encoding="utf-8"))
+        return HTMLResponse(
+            content=(
+                "<!DOCTYPE html><html><head><title>TBO B2B Agent Portal (Mock)</title></head>"
+                f"<body><h1>TBO B2B Partner Portal ({state.version})</h1>"
+                "<div id='app'>Search, Hold, Book, Pay, Cancel, Refund</div>"
+                "<script src='/static/app.js'></script></body></html>"
+            )
         )
+
+    @app.get("/assets/{asset_path:path}")
+    def portal_assets(asset_path: str) -> Response:
+        assets_root = (portal_dist / "assets").resolve()
+        candidate = (assets_root / asset_path).resolve()
+        if not str(candidate).startswith(str(assets_root)) or not candidate.is_file():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
+        return FileResponse(candidate)
 
     @app.get("/static/app.js")
     def portal_bundle() -> Response:
         extra_v11 = ""
         if state.version == "v1.1":
-            extra_v11 = "\nconst fastBookingPayload = { hold_id: '', total_fare: 0, quantity: 1 };"
+            extra_v11 = "\nwindow.__FAST_BOOKING_PAYLOAD__ = { hold_id: '', total_fare: 0, quantity: 1 };"
         js = f"""// Mock TBO Portal Bundle {state.version}
-const API_ENDPOINTS = [
+window.__TBO_API_ENDPOINTS__ = [
   "/api/v3/auth/login",
   "/api/v3/search",
   "/api/v3/holds",
@@ -329,7 +254,7 @@ const API_ENDPOINTS = [
     # --- Auth Endpoints ---
     @app.post("/api/v3/auth/login")
     def login(req: LoginRequest) -> dict[str, Any]:
-        user = state.users.get(req.username)
+        user = db.get_user(req.username)
         if not user or not hmac.compare_digest(user["password"], req.password):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
         token = create_jwt(
@@ -341,25 +266,44 @@ const API_ENDPOINTS = [
                 "exp": int(time.time()) + 3600,
             }
         )
-        return {"access_token": token, "token_type": "bearer", "agency_id": user["agency_id"], "role": user["role"]}
+        return {
+            "access_token": token,
+            "token_type": "bearer",
+            "agency_id": user["agency_id"],
+            "role": user["role"],
+            "display_name": user["display_name"],
+            "credit_limit": user["credit_limit"],
+        }
 
     @app.post("/api/v3/auth/logout")
     def logout(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, str]:
-        state.revoked_tokens.add(user["_token"])
+        db.add_revoked_token(user["_token"])
         return {"status": "logged_out"}
+
+    @app.get("/api/v3/users/me")
+    def get_profile(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+        return {
+            "user_id": user["user_id"],
+            "username": user["username"],
+            "agency_id": user["agency_id"],
+            "role": user["role"],
+            "display_name": user["display_name"],
+            "credit_limit": user["credit_limit"],
+        }
 
     @app.patch("/api/v3/users/me")
     async def update_profile(request: Request, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
         body = await request.json()
-        target_user = state.users[user["username"]]
+        updates: dict[str, Any] = {}
         if state.version == "v1.1":
             # Planted mass-assignment privilege escalation
             for k, v in body.items():
                 if k in ("display_name", "role", "credit_limit"):
-                    target_user[k] = v
+                    updates[k] = v
         else:
             if "display_name" in body and isinstance(body["display_name"], str):
-                target_user["display_name"] = body["display_name"]
+                updates["display_name"] = body["display_name"]
+        target_user = db.update_user_fields(user["username"], updates)
         return {
             "user_id": target_user["user_id"],
             "agency_id": target_user["agency_id"],
@@ -371,14 +315,16 @@ const API_ENDPOINTS = [
     # --- Core Travel Flow ---
     @app.get("/api/v3/search")
     def search_inventory(city: str | None = None, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        items = list(state.inventory.values())
-        if city:
-            items = [i for i in items if city.lower() in i["city"].lower()]
+        items = db.list_inventory(city=city)
         return {"results": items, "agency_id": user["agency_id"]}
+
+    @app.get("/api/v3/holds")
+    def list_holds(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+        return {"holds": db.list_holds_by_agency(user["agency_id"]), "agency_id": user["agency_id"]}
 
     @app.post("/api/v3/holds")
     def create_hold(req: HoldRequest, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        item = state.inventory.get(req.item_id)
+        item = db.get_inventory(req.item_id)
         if not item:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inventory not found")
         if req.quantity <= 0:
@@ -393,15 +339,14 @@ const API_ENDPOINTS = [
             "discount_applied": 0.0,
             "applied_coupons": [],
         }
-        state.holds[hold_id] = hold
-        return hold
+        return db.create_hold(hold)
 
     @app.post("/api/v3/coupons/apply")
     def apply_coupon(req: CouponApplyRequest, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        hold = state.holds.get(req.hold_id)
+        hold = db.get_hold(req.hold_id)
         if not hold or hold["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hold not found")
-        coupon = state.coupons.get(req.code)
+        coupon = db.get_coupon(req.code)
         if not coupon:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid coupon")
 
@@ -413,11 +358,15 @@ const API_ENDPOINTS = [
         hold["quoted_fare"] = max(0.0, round(hold["quoted_fare"] - coupon["discount_amount"], 2))
         if state.version != "v1.1":
             hold["quoted_fare"] = max(10.0, hold["quoted_fare"])
-        return hold
+        return db.update_hold(hold)
+
+    @app.get("/api/v3/bookings")
+    def list_bookings(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+        return {"bookings": db.list_bookings_by_agency(user["agency_id"]), "agency_id": user["agency_id"]}
 
     @app.post("/api/v3/bookings")
     def create_booking(req: BookingCreateRequest, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        hold = state.holds.get(req.hold_id)
+        hold = db.get_hold(req.hold_id)
         if not hold or hold["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hold not found")
 
@@ -451,12 +400,11 @@ const API_ENDPOINTS = [
             "traveller_passport": req.traveller_passport,
             "traveller_email": req.traveller_email,
         }
-        state.bookings[booking_id] = booking
-        return booking
+        return db.create_booking(booking)
 
     @app.get("/api/v3/bookings/{booking_id}")
     def get_booking(booking_id: str, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         if state.version != "v1.1" and booking["agency_id"] != user["agency_id"]:
@@ -465,37 +413,37 @@ const API_ENDPOINTS = [
 
     @app.post("/api/v3/bookings/{booking_id}/pay")
     def pay_booking(booking_id: str, req: PayRequest, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking or booking["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         if req.amount <= 0 or req.amount < booking["total_fare"]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient payment amount")
         booking["paid_amount"] = round(req.amount, 2)
         booking["payment_status"] = "PAID"
-        return booking
+        return db.update_booking(booking)
 
     @app.post("/api/v3/bookings/{booking_id}/confirm")
     def confirm_booking(booking_id: str, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking or booking["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         if state.version != "v1.1" and booking["payment_status"] != "PAID":
             raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Payment required before confirm")
         booking["status"] = "CONFIRMED"
         booking["voucher_code"] = f"VCH-{booking_id}"
-        return booking
+        return db.update_booking(booking)
 
     @app.post("/api/v3/bookings/{booking_id}/cancel")
     def cancel_booking(booking_id: str, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking or booking["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         booking["status"] = "CANCELLED"
-        return booking
+        return db.update_booking(booking)
 
     @app.post("/api/v3/bookings/{booking_id}/refund")
     def refund_booking(booking_id: str, user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking or booking["agency_id"] != user["agency_id"]:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         if booking["status"] != "CANCELLED":
@@ -504,7 +452,7 @@ const API_ENDPOINTS = [
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Booking already refunded")
         booking["refunded_amount"] = round(booking["refunded_amount"] + booking["paid_amount"], 2)
         booking["payment_status"] = "REFUNDED"
-        return booking
+        return db.update_booking(booking)
 
     @app.post("/api/v3/suppliers/webhook-test")
     async def test_supplier_webhook(
@@ -535,7 +483,7 @@ const API_ENDPOINTS = [
     def legacy_v1_get_booking(booking_id: str) -> dict[str, Any]:
         if state.version == "v1.2":
             raise HTTPException(status_code=status.HTTP_410_GONE, detail="Legacy v1 API decommissioned")
-        booking = state.bookings.get(booking_id)
+        booking = db.get_booking(booking_id)
         if not booking:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
         # Zombie API lacks auth and leaks PII in v1.0/v1.1
@@ -545,17 +493,18 @@ const API_ENDPOINTS = [
     def internal_shadow_export() -> dict[str, Any]:
         if state.version == "v1.2":
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Endpoint removed")
+        all_bookings = db.list_all_bookings()
         # Shadow API: active in gateway logs, undocumented in UI/ownership
         return {
             "shadow": True,
-            "count": len(state.bookings),
+            "count": len(all_bookings),
             "sample": [
                 {
                     "booking_id": b["booking_id"],
                     "agency_id": b["agency_id"],
                     "traveller_passport": b["traveller_passport"],
                 }
-                for b in list(state.bookings.values())[:2]
+                for b in all_bookings[:2]
             ],
         }
 

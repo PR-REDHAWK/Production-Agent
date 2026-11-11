@@ -27,6 +27,29 @@ Hybrid neuro-symbolic autonomous security agents that watch deploys and JS/log d
    ```
    Open `http://127.0.0.1:5173`. Click **Deploy v1.1 (Vuln)** -> watch live SSE events & inspect verified findings/PoCs -> approve HITL items -> click **Deploy v1.2 (Fix & Retest)** to watch `RetestAgent` transition tickets to `VERIFIED_FIXED`.
 
+## Standalone Demo Travel Website + SQLite Database (`mock_tbo_target/portal/`)
+To demo a real interactive B2B travel booking website (with a resettable SQLite DB at `mock_tbo_target/mock_tbo.db`) alongside the DAST Security Console:
+
+1. **Start the Demo Travel Backend (port `8001`):**
+   ```powershell
+   cd agentic-dast
+   python -m uvicorn mock_tbo_target.app:app --host 127.0.0.1 --port 8001
+   ```
+2. **Start (or build) the Vite Travel Portal UI (port `5174`, or built into `8001`):**
+   ```powershell
+   cd agentic-dast/mock_tbo_target/portal
+   npm install
+   npm run dev -- --host 127.0.0.1 --port 5174
+   ```
+3. **Point the DAST Control Plane (`8000`) at the live Demo Travel Website (`8001`):**
+   ```powershell
+   cd agentic-dast
+   $env:DAST_TARGET_MODE = "live_http"
+   $env:DAST_TARGET_BASE_URL = "http://127.0.0.1:8001"
+   python -m uvicorn api.app:app --host 127.0.0.1 --port 8000
+   ```
+   Now open `http://127.0.0.1:5174` (TBO PartnerDesk travel site) and `http://127.0.0.1:5173` (Agentic DAST Security Console) side-by-side!
+
 ## Adapter Guide: Connecting to TBO Live Staging (`configs/target_scope.yaml`)
 To switch from `mock_tbo_target/` to TBO's live hackathon staging environment without changing agent code:
 

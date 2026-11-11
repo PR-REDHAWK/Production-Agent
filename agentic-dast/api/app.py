@@ -27,7 +27,7 @@ from agents.triage import TriageAgent
 from agents.verifier import VerifierAgent
 from mock_tbo_target.app import VersionLiteral, create_app as create_mock_target_app
 from safety.audit import AuditLogger
-from safety.gateway import SafetyGateway, load_scope_config
+from safety.gateway import SafeAsyncClient, SafetyGateway, load_scope_config
 from safety.vault import TestCredentialVault
 from triggers.watchers import ChangeEvent, DeployWebhookEvent
 
@@ -293,28 +293,34 @@ def create_control_app(
 
     @app.post("/api/sim/switch")
     async def sim_switch(req: SimSwitchRequest) -> dict[str, Any]:
-        if state.mock_app is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Simulator controls are only available in in_memory_mock mode",
-            )
-        if req.reset_state:
-            state.mock_app.state.sim.reset(version=req.version)
-            # Clear cached vault tokens so reset users get fresh tokens cleanly
+        if state.mock_app is not None:
+            if req.reset_state:
+                state.mock_app.state.sim.reset(version=req.version)
+                for actor in state.gateway.vault.list_actors():
+                    state.gateway.vault.clear_token(actor)
+            else:
+                state.mock_app.state.sim.version = req.version
+            active_version = state.mock_app.state.sim.version
+        else:
+            # In live_http mode against standalone demo target, forward /__sim strictly through SafetyGateway
+            endpoint = "/__sim/reset" if req.reset_state else "/__sim/version"
+            async with SafeAsyncClient(state.gateway, agent="control_plane", actor="unauthenticated") as client:
+                resp = await client.post(f"{state.target_base_url}{endpoint}", json={"version": req.version})
+                if resp.status_code != 200:
+                    raise HTTPException(status_code=resp.status_code, detail=resp.text)
             for actor in state.gateway.vault.list_actors():
                 state.gateway.vault.clear_token(actor)
-        else:
-            state.mock_app.state.sim.version = req.version
+            active_version = req.version
 
-        state.orchestrator._emit("sim_switch", f"Target switched to {req.version}", version=req.version)
+        state.orchestrator._emit("sim_switch", f"Target switched to {active_version}", version=active_version)
 
         webhook_result: dict[str, Any] | None = None
         if req.trigger_webhook:
-            is_fix = req.is_fix_deploy if req.is_fix_deploy is not None else (req.version == "v1.2")
+            is_fix = req.is_fix_deploy if req.is_fix_deploy is not None else (active_version == "v1.2")
             deploy_ev = DeployWebhookEvent(
-                commit=f"sim-{req.version}",
+                commit=f"sim-{active_version}",
                 changed_services=["bookings", "users", "suppliers", "pricing", "legacy"],
-                release_notes=f"Simulated deploy {req.version}",
+                release_notes=f"Simulated deploy {active_version}",
                 environment="staging",
                 is_fix_deploy=is_fix,
             )
@@ -324,9 +330,9 @@ def create_control_app(
                         deploy_ev,
                         auto_approve_hitl_execution=True,
                     ),
-                    f"Deploy {req.version}",
+                    f"Deploy {active_version}",
                 )
-                return {"status": "started", "version": state.mock_app.state.sim.version, "webhook_result": None}
+                return {"status": "started", "version": active_version, "webhook_result": None}
 
             async with state._scan_lock:
                 res = await state.orchestrator.handle_deploy_webhook(
@@ -335,7 +341,7 @@ def create_control_app(
                 )
                 webhook_result = res.model_dump()
 
-        return {"version": state.mock_app.state.sim.version, "webhook_result": webhook_result}
+        return {"version": active_version, "webhook_result": webhook_result}
 
     @app.get("/api/events/stream")
     async def stream_events(once: bool = False) -> StreamingResponse:

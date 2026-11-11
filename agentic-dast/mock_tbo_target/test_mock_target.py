@@ -165,3 +165,35 @@ def test_gateway_log_generator(tmp_path: Path) -> None:
     assert "/api/v3/search" in paths
     assert "/internal/shadow-export" in paths
     assert not any(p.startswith("/api/v1/") for p in paths)
+
+
+def test_sqlite_persistence_across_restarts(tmp_path: Path) -> None:
+    db_file = tmp_path / "target.db"
+    app1 = create_app("v1.0", db_path=db_file)
+    client1 = TestClient(app1)
+    token = _login(client1, "alpha_admin@synthetic-travel.test", "synth-alpha-admin-pass")
+
+    hold = client1.post("/api/v3/holds", json={"item_id": "INV-SIN-303", "quantity": 2}, headers=_auth(token))
+    assert hold.status_code == 200
+    bk = client1.post(
+        "/api/v3/bookings",
+        json={
+            "hold_id": hold.json()["hold_id"],
+            "traveller_name": "Persist Guest",
+            "traveller_passport": "SYNTH-PERSIST-01",
+            "traveller_email": "persist@synthetic-traveller.test",
+        },
+        headers=_auth(token),
+    )
+    assert bk.status_code == 200
+    bk_id = bk.json()["booking_id"]
+    app1.state.sim.db.close()
+
+    # Recreate app from the exact same SQLite DB file -> booking survives restart
+    app2 = create_app(db_path=db_file)
+    client2 = TestClient(app2)
+    token2 = _login(client2, "alpha_admin@synthetic-travel.test", "synth-alpha-admin-pass")
+    listed = client2.get("/api/v3/bookings", headers=_auth(token2))
+    assert listed.status_code == 200
+    assert any(b["booking_id"] == bk_id for b in listed.json()["bookings"])
+    app2.state.sim.db.close()
