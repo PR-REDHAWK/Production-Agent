@@ -178,6 +178,21 @@ export default function App() {
     )
   }
 
+  const handleDeployV10 = () => {
+    runAction(
+      'Resetting target to baseline v1.0 (clean state)...',
+      () =>
+        dastApi.switchSimVersion({
+          version: 'v1.0',
+          reset_state: true,
+          trigger_webhook: false,
+          is_fix_deploy: false,
+          background: true,
+        }),
+      { background: true }
+    )
+  }
+
   const handlePollWatchers = () => {
     runAction('Polling continuous drift watchers...', () => dastApi.pollWatchers())
   }
@@ -237,6 +252,7 @@ export default function App() {
           pendingHitlCount={hitl.pending_count}
           busyAction={busyAction}
           onRunScan={handleRunScan}
+          onDeployV10={handleDeployV10}
           onDeployV11={handleDeployV11}
           onDeployV12={handleDeployV12}
           onOpenHitl={() => setHitlModalOpen(true)}
@@ -264,6 +280,7 @@ export default function App() {
               events={events}
               onSelectTab={setActiveTab}
               onRunScan={handleRunScan}
+              onDeployV10={handleDeployV10}
               onDeployV11={handleDeployV11}
               onDeployV12={handleDeployV12}
               onSelectTicket={setSelectedTicketId}
@@ -282,6 +299,7 @@ export default function App() {
               hitl={hitl}
               health={health}
               onRunScan={handleRunScan}
+              onDeployV10={handleDeployV10}
               onDeployV11={handleDeployV11}
               onDeployV12={handleDeployV12}
               onPollWatchers={handlePollWatchers}
@@ -315,6 +333,7 @@ export default function App() {
             <RetestingView
               tickets={tickets}
               onRetestTicket={handleRetestTicket}
+              onDeployV10={handleDeployV10}
               onDeployV11={handleDeployV11}
               onDeployV12={handleDeployV12}
               busyAction={busyAction}

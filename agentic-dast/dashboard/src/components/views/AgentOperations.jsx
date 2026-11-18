@@ -16,6 +16,7 @@ export function AgentOperations({
   hitl = { pending_count: 0, pending: [], all: [] },
   health = null,
   onRunScan,
+  onDeployV10,
   onDeployV11,
   onDeployV12,
   onPollWatchers,
@@ -56,6 +57,7 @@ export function AgentOperations({
         isScanning={isScanning}
         circuitBreakerState={gatewayState.metrics?.circuit_breaker?.state || 'CLOSED'}
         onRunScan={() => onRunScan({ usePlaywright, deltaOnly })}
+        onDeployV10={onDeployV10}
         onDeployV11={onDeployV11}
         onDeployV12={onDeployV12}
         busyAction={busyAction}

@@ -125,9 +125,11 @@ export function Sidebar({
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
               <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-              <span>ENGINE V1.0</span>
-              <span className="text-emerald-400">STANDBY</span>
+            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+              <span>SAFETY GATEWAY</span>
+              <span className={gatewayMetrics?.circuit_breaker?.state === 'EMERGENCY_PAUSE' ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
+                {gatewayMetrics?.circuit_breaker?.state === 'EMERGENCY_PAUSE' ? 'PAUSED' : 'PROTECTED'}
+              </span>
             </div>
           </div>
         )}

@@ -8,6 +8,7 @@ import { IconRefresh, IconCheck, IconShieldAlert, IconPlay, IconActivity, IconZa
 export function RetestingView({
   tickets = [],
   onRetestTicket,
+  onDeployV10,
   onDeployV11,
   onDeployV12,
   busyAction = '',
@@ -100,6 +101,13 @@ export function RetestingView({
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              disabled={Boolean(busyAction)}
+              onClick={onDeployV10}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 transition"
+            >
+              <span>Reset Baseline (v1.0)</span>
+            </button>
             <button
               disabled={Boolean(busyAction)}
               onClick={onDeployV11}

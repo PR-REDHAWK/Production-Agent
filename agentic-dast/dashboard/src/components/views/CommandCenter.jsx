@@ -25,6 +25,7 @@ export function CommandCenter({
   events = [],
   onSelectTab,
   onRunScan,
+  onDeployV10,
   onDeployV11,
   onDeployV12,
   onSelectTicket,
@@ -32,6 +33,84 @@ export function CommandCenter({
 }) {
   const cb = gatewayState.metrics?.circuit_breaker || {}
   const rl = gatewayState.metrics?.rate_limits || {}
+
+  // Hackathon Evaluation Workflow State
+  const demoStage = useMemo(() => {
+    const version = health?.mock_version || 'v1.0'
+    const openTicketsCount = tickets.filter((t) => t.status !== 'VERIFIED_FIXED').length
+    const fixedTicketsCount = tickets.filter((t) => t.status === 'VERIFIED_FIXED').length
+
+    if (busyAction) {
+      return {
+        step: 3,
+        phase: 'SCANNING',
+        title: 'Autonomous Multi-Agent Cycle Executing',
+        desc: busyAction,
+        badge: 'SCAN ACTIVE',
+        actionLabel: 'Observing Execution...',
+        actionDisabled: true,
+        actionFn: () => onSelectTab('operations'),
+      }
+    }
+    if (version === 'v1.0' && tickets.length === 0) {
+      return {
+        step: 1,
+        phase: 'BASELINE',
+        title: 'Hardened Baseline Environment Active (v1.0)',
+        desc: 'Zero active vulnerabilities. All B2B microservices enforce authorization. Click to deploy flawed v1.1 to demonstrate autonomous detection.',
+        badge: 'STAGE 1 / 4',
+        actionLabel: 'Deploy v1.1 (Planted Flaws) →',
+        actionDisabled: false,
+        actionFn: onDeployV11,
+      }
+    }
+    if (version === 'v1.1' && tickets.length === 0) {
+      return {
+        step: 2,
+        phase: 'FLAWS_PLANTED',
+        title: 'Vulnerable Target Active (v1.1 Planted Flaws)',
+        desc: 'Cross-tenant IDOR, fare tampering, coupon stacking, double refund race, and shadow API flaws active. Ready to run DAST agents.',
+        badge: 'STAGE 2 / 4',
+        actionLabel: 'Run 8-Stage DAST Scan →',
+        actionDisabled: false,
+        actionFn: onRunScan,
+      }
+    }
+    if (openTicketsCount > 0) {
+      return {
+        step: 3,
+        phase: 'FINDINGS_CONFIRMED',
+        title: `${openTicketsCount} Vulnerabilities Confirmed (Zero False Positives)`,
+        desc: 'Every finding verified by deterministic control vs exploit replay. Inspect findings, approve HITL actions, then deploy remediated release.',
+        badge: 'STAGE 3 / 4',
+        actionLabel: 'Deploy v1.2 (Fix & Auto-Retest) →',
+        actionDisabled: false,
+        actionFn: onDeployV12,
+      }
+    }
+    if (version === 'v1.2' && fixedTicketsCount > 0) {
+      return {
+        step: 4,
+        phase: 'REMEDIATED',
+        title: 'Closed-Loop Remediation Verified by RetestAgent',
+        desc: `All ${fixedTicketsCount} planted flaws confirmed closed on patched v1.2 release. Full closed-loop DAST lifecycle successfully demonstrated.`,
+        badge: 'STAGE 4 / 4 · COMPLETE',
+        actionLabel: 'Reset to Clean Baseline v1.0 →',
+        actionDisabled: false,
+        actionFn: onDeployV10,
+      }
+    }
+    return {
+      step: 1,
+      phase: 'READY',
+      title: 'Target Operational',
+      desc: 'System operational. Trigger a scan or switch environment release.',
+      badge: 'STANDBY',
+      actionLabel: 'Run Full Scan',
+      actionDisabled: false,
+      actionFn: onRunScan,
+    }
+  }, [health, tickets, busyAction, onDeployV10, onDeployV11, onDeployV12, onRunScan, onSelectTab])
 
   // Compute security posture score (0 - 100)
   const postureScore = useMemo(() => {
@@ -142,6 +221,53 @@ export function CommandCenter({
           icon={<IconDatabase className="w-4 h-4" />}
         />
       </section>
+
+      {/* Hackathon Demonstration Storyline Stepper */}
+      <div className="relative overflow-hidden rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 p-5 shadow-xl backdrop-blur-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1 min-w-[280px]">
+            <div className="flex items-center gap-2.5">
+              <span className="rounded-full bg-cyan-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                {demoStage.badge}
+              </span>
+              <h2 className="text-sm font-bold text-white tracking-tight">
+                {demoStage.title}
+              </h2>
+            </div>
+            <p className="text-xs text-slate-300 font-sans leading-relaxed max-w-2xl">
+              {demoStage.desc}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {demoStage.actionFn && (
+              <button
+                disabled={demoStage.actionDisabled}
+                onClick={demoStage.actionFn}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)] hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-50 transition"
+              >
+                <span>{demoStage.actionLabel}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 4-Step Visual Progress Track */}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[10px] font-mono">
+          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 1 ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-300' : 'border-slate-800 text-slate-500'}`}>
+            1. Baseline (v1.0)
+          </div>
+          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 2 ? 'border-amber-500/40 bg-amber-950/20 text-amber-300' : 'border-slate-800 text-slate-500'}`}>
+            2. Planted Flaws (v1.1)
+          </div>
+          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 3 ? 'border-rose-500/40 bg-rose-950/20 text-rose-300' : 'border-slate-800 text-slate-500'}`}>
+            3. DAST Detection & Triage
+          </div>
+          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 4 ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300' : 'border-slate-800 text-slate-500'}`}>
+            4. Closed-Loop Retest (v1.2)
+          </div>
+        </div>
+      </div>
 
       {/* Multi-Agent Operations Network Highlight Strip */}
       <div

@@ -6,6 +6,7 @@ export function PipelineProgressBar({
   currentStage = 'standby',
   isScanning = false,
   onRunScan,
+  onDeployV10,
   onDeployV11,
   onDeployV12,
   circuitBreakerState = 'CLOSED',

@@ -11,6 +11,7 @@ export function Header({
   pendingHitlCount = 0,
   busyAction = '',
   onRunScan,
+  onDeployV10,
   onDeployV11,
   onDeployV12,
   onOpenHitl,
@@ -38,6 +39,16 @@ export function Header({
 
         {/* Right: Quick Action Center */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Reset v1.0 Baseline */}
+          <button
+            disabled={Boolean(busyAction)}
+            onClick={onDeployV10}
+            title="Reset target to clean baseline v1.0"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 transition"
+          >
+            <span>Reset v1.0</span>
+          </button>
+
           {/* Run Full Scan Button */}
           <button
             disabled={Boolean(busyAction)}

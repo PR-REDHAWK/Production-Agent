@@ -420,6 +420,22 @@ export function AttackSurfaceView({
           <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1 text-[10px] font-mono text-slate-400 backdrop-blur-md">
             Click node to inspect details · Drag to pan · Mouse zoom active
           </div>
+
+          {/* Empty State Overlay */}
+          {endpoints.length === 0 && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-6 backdrop-blur-md max-w-md shadow-2xl">
+                <IconCpu className="mx-auto h-8 w-8 text-cyan-400 mb-2" />
+                <h4 className="text-sm font-bold text-white">Knowledge Graph Awaiting Discovery</h4>
+                <p className="mt-1 text-xs text-slate-400 leading-relaxed font-sans">
+                  The application topology populates dynamically as the Reconnaissance Agent tokenizes JS bundles and crawls B2B portals.
+                </p>
+                <div className="mt-3 text-[11px] font-mono text-cyan-300">
+                  Click [Run Full Scan] to discover endpoints
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Node Inspection Detail Drawer */}
