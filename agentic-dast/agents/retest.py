@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from pydantic import BaseModel, Field
 
 from agents.triage import TriagedTicket
@@ -47,22 +49,24 @@ class RetestAgent:
             fixed=False,
         )
 
-    async def retest_all(self, tickets: list[TriagedTicket]) -> RetestBatchSummary:
-        outcomes: list[RetestOutcome] = []
-        fixed = 0
-        still_vuln = 0
-        for ticket in tickets:
-            if ticket.status == "REJECTED":
-                continue
-            res = await self.retest_ticket(ticket)
-            outcomes.append(res)
-            if res.fixed:
-                fixed += 1
-            else:
-                still_vuln += 1
+    async def retest_all(
+        self,
+        tickets: list[TriagedTicket],
+        max_concurrency: int = 4,
+    ) -> RetestBatchSummary:
+        eligible = [t for t in tickets if t.status != "REJECTED"]
+        sem = asyncio.Semaphore(max_concurrency)
+
+        async def _retest_one(ticket: TriagedTicket) -> RetestOutcome:
+            async with sem:
+                return await self.retest_ticket(ticket)
+
+        outcomes = await asyncio.gather(*[_retest_one(t) for t in eligible])
+        fixed = sum(1 for o in outcomes if o.fixed)
+        still_vuln = sum(1 for o in outcomes if not o.fixed)
         return RetestBatchSummary(
             retested_count=len(outcomes),
             fixed_count=fixed,
             still_vulnerable_count=still_vuln,
-            outcomes=outcomes,
+            outcomes=list(outcomes),
         )

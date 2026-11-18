@@ -639,6 +639,10 @@ class SafetyGateway:
             "rate_limits": self.scope_config.rate_limits.model_dump(),
         }
 
+    def close(self) -> None:
+        """Release underlying audit logger and connection resources."""
+        self.audit.close()
+
 
 def _extract_body_text(request: httpx.Request) -> str:
     try:
@@ -899,26 +903,32 @@ def create_playwright_route_handler(
 
         if hasattr(route, "fetch") and hasattr(route, "fulfill"):
             t0 = time.perf_counter()
-            api_resp = await route.fetch(headers=final_headers, max_redirects=0)
-            latency_ms = (time.perf_counter() - t0) * 1000.0
-            resp_text = await api_resp.text()
             try:
-                gateway.finalize_response(
-                    agent=agent,
-                    actor=actor,
-                    method=method,
-                    url=url,
-                    req_headers=final_headers,
-                    req_body_text=body_text,
-                    status_code=int(api_resp.status),
-                    resp_headers=dict(api_resp.headers),
-                    resp_body_text=resp_text,
-                    latency_ms=latency_ms,
-                )
-            except ScopeViolationError:
-                await route.abort("blockedbyclient")
-                return
-            await route.fulfill(response=api_resp)
+                api_resp = await route.fetch(headers=final_headers, max_redirects=0)
+                latency_ms = (time.perf_counter() - t0) * 1000.0
+                resp_text = await api_resp.text()
+                try:
+                    gateway.finalize_response(
+                        agent=agent,
+                        actor=actor,
+                        method=method,
+                        url=url,
+                        req_headers=final_headers,
+                        req_body_text=body_text,
+                        status_code=int(api_resp.status),
+                        resp_headers=dict(api_resp.headers),
+                        resp_body_text=resp_text,
+                        latency_ms=latency_ms,
+                    )
+                except ScopeViolationError:
+                    await route.abort("blockedbyclient")
+                    return
+                await route.fulfill(response=api_resp)
+            except Exception:  # noqa: BLE001
+                try:
+                    await route.abort("blockedbyclient")
+                except Exception:
+                    pass
             return
 
         await route.continue_(headers=final_headers)

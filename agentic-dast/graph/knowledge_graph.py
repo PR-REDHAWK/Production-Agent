@@ -13,6 +13,7 @@ from graph.models import (
     EndpointRecord,
     GraphSummary,
     NodeType,
+    ParamList,
     SensitivityTag,
 )
 
@@ -201,10 +202,36 @@ class AppKnowledgeGraph:
                 for dst in next_nodes:
                     self._add_edge_once(src, dst, "FLOW_STEP", transition=f"{FLOW_ORDER[idx]}->{FLOW_ORDER[idx + 1]}")
 
+    def get_endpoint(self, method: str, canonical_path: str) -> EndpointRecord | None:
+        """Lookup an endpoint record by method and canonical path."""
+        ep_id = self.endpoint_node_id(method, canonical_path)
+        if ep_id not in self.graph:
+            return None
+        data = self.graph.nodes[ep_id]
+        locs = dict(data.get("param_locations", {}))
+        param_list = ParamList(list(data.get("params", [])), locs)
+        return EndpointRecord(
+            method=data["method"],
+            canonical_path=data["canonical_path"],
+            sample_paths=list(data.get("sample_paths", [])),
+            role_sample_paths={k: list(v) for k, v in dict(data.get("role_sample_paths", {})).items()},
+            sources=list(data.get("sources", [])),
+            roles=list(data.get("roles", [])),
+            params=param_list,
+            param_locations=locs,
+            sensitivity_tags=list(data.get("sensitivity_tags", [])),
+            business_flow=data.get("business_flow"),
+            owner_team=data.get("owner_team"),
+            observed_statuses=list(data.get("observed_statuses", [])),
+            response_fields=list(data.get("response_fields", [])),
+        )
+
     def list_endpoints(self) -> list[EndpointRecord]:
         records: list[EndpointRecord] = []
         for _, data in self.graph.nodes(data=True):
             if data.get("node_type") == "Endpoint":
+                locs = dict(data.get("param_locations", {}))
+                param_list = ParamList(list(data.get("params", [])), locs)
                 records.append(
                     EndpointRecord(
                         method=data["method"],
@@ -213,8 +240,8 @@ class AppKnowledgeGraph:
                         role_sample_paths={k: list(v) for k, v in dict(data.get("role_sample_paths", {})).items()},
                         sources=list(data.get("sources", [])),
                         roles=list(data.get("roles", [])),
-                        params=list(data.get("params", [])),
-                        param_locations=dict(data.get("param_locations", {})),
+                        params=param_list,
+                        param_locations=locs,
                         sensitivity_tags=list(data.get("sensitivity_tags", [])),
                         business_flow=data.get("business_flow"),
                         owner_team=data.get("owner_team"),

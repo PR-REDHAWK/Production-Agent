@@ -5,6 +5,7 @@ All HTTP and Playwright traffic goes strictly through SafetyGateway.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from pathlib import Path
@@ -293,6 +294,9 @@ class ReconAgent:
             "purge",
             "revoke",
             "terminate",
+            "v1.0",
+            "v1.1",
+            "v1.2",
         )
 
         crawled: list[str] = []
@@ -359,6 +363,18 @@ class ReconAgent:
                     # Step 2: Safely click non-destructive interactive flows & tabs (panel actions before top tabs)
                     clicked_labels: set[str] = set()
                     for _ in range(16):
+                        # Ensure visible empty query inputs have realistic values before submitting
+                        try:
+                            for inp in await page.locator("input[type='text']:visible, input:not([type]):visible").all():
+                                try:
+                                    val = await inp.input_value()
+                                    if not val:
+                                        await inp.fill("Delhi")
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
                         visible_controls = page.locator("button:visible, [role='tab']:visible")
                         count = await visible_controls.count()
                         raw_items: list[tuple[int, str, int, float]] = []
@@ -379,31 +395,24 @@ class ReconAgent:
                                 continue
                             nav_flag = await el.evaluate(
                                 """node => {
-                                    if (node.type === 'submit' || node.closest('form')) return 0;
-                                    if (node.getAttribute('role') === 'tab' || node.closest('nav, header, aside, [role="tablist"]')) return 2;
+                                    const txt = (node.textContent || '').trim().toLowerCase();
+                                    if (
+                                        node.getAttribute('role') === 'tab' ||
+                                        node.closest('nav, header, aside, [role="tablist"]') ||
+                                        /search & book|my bookings|profile & supplier|tab/.test(txt)
+                                    ) return 2;
+                                    if (node.closest('form')) return 0;
                                     return 1;
                                 }"""
                             )
-                            box = await el.bounding_box()
-                            y_pos = float(box["y"]) if box else 9999.0
-                            raw_items.append((idx, lower_label, int(nav_flag), y_pos))
+                            raw_items.append((idx, lower_label, int(nav_flag)))
 
                         if not raw_items:
                             break
 
-                        min_y = min(item[3] for item in raw_items)
-                        top_row_count = sum(1 for item in raw_items if item[3] <= min_y + 24.0)
                         candidates: list[tuple[int, int, str]] = []
-                        for idx, lower_label, nav_flag, y_pos in raw_items:
-                            if nav_flag == 2:
-                                priority = 1
-                            elif nav_flag == 0:
-                                priority = 0
-                            elif top_row_count >= 2 and y_pos <= min_y + 24.0:
-                                priority = 1
-                            else:
-                                priority = 0
-                            candidates.append((priority, idx, lower_label))
+                        for idx, lower_label, nav_flag in raw_items:
+                            candidates.append((nav_flag, idx, lower_label))
 
                         candidates.sort(key=lambda item: (item[0], item[1]))
                         _, target_idx, chosen_label = candidates[0]
@@ -419,7 +428,6 @@ class ReconAgent:
                         await asyncio.gather(*capture_tasks, return_exceptions=True)
 
                     crawled.append(actor)
-
                     for method, req_url, status_code, post_data, resp_fields in captured_entries:
                         parsed = urlparse(req_url)
                         if not parsed.path.startswith(("/api/", "/internal/")) or status_code == 404:
@@ -487,10 +495,9 @@ class ReconAgent:
         roles: list[str] | None = None,
     ) -> list[str]:
         """Exercise core B2B travel APIs per role through SafeAsyncClient to map params & schemas."""
-        exercised_roles: list[str] = []
         target_roles = roles or ["agency_a_admin", "agency_a_subagent", "agency_b_admin"]
 
-        for actor in target_roles:
+        async def _exercise_actor(actor: str) -> str:
             async with SafeAsyncClient(
                 self.gateway,
                 agent="recon_flow_crawler",
@@ -617,8 +624,10 @@ class ReconAgent:
                 self._record_http_observation(
                     "PATCH", "/api/v3/users/me", actor, me_resp, params={"display_name": "body"}
                 )
-            exercised_roles.append(actor)
-        return exercised_roles
+                return actor
+
+        exercised_roles = await asyncio.gather(*[_exercise_actor(role) for role in target_roles])
+        return list(exercised_roles)
 
     async def probe_legacy_paths(self, candidate_paths: tuple[str, ...] = _LEGACY_PROBE_PATHS) -> list[str]:
         """Safely probe legacy/versioned route guesses through SafetyGateway."""
@@ -630,8 +639,11 @@ class ReconAgent:
             pace=True,
             inner_transport=self._async_transport,
         ) as client:
-            for path in candidate_paths:
-                resp = await client.get(f"{self.base_url}{path}")
+            async def _probe(path: str) -> tuple[str, httpx.Response]:
+                return path, await client.get(f"{self.base_url}{path}")
+
+            results = await asyncio.gather(*[_probe(p) for p in candidate_paths])
+            for path, resp in results:
                 if resp.status_code not in (404, 410):
                     canon = normalize_path(path)
                     hits.append(canon)

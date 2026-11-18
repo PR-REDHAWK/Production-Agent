@@ -349,11 +349,21 @@ class VerifierAgent:
             repro_curl=self._build_repro_curl(self.base_url, exploit_step),
         )
 
-    async def verify_batch(self, candidates: list[CandidateFinding]) -> VerificationSummary:
+    async def verify_batch(
+        self,
+        candidates: list[CandidateFinding],
+        max_concurrency: int = 4,
+    ) -> VerificationSummary:
+        sem = asyncio.Semaphore(max_concurrency)
+
+        async def _verify_cand(cand: CandidateFinding) -> VerifiedFinding | None:
+            async with sem:
+                return await self.verify_one(cand)
+
+        results = await asyncio.gather(*[_verify_cand(c) for c in candidates])
         verified: list[VerifiedFinding] = []
         suppressed = 0
-        for cand in candidates:
-            res = await self.verify_one(cand)
+        for res in results:
             if res is None:
                 suppressed += 1
             else:

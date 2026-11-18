@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections.abc import Callable
 from datetime import datetime, timezone
@@ -191,14 +192,25 @@ class OrchestratorAgent:
             ),
         }
 
+        # Stage 5: Safe Execution (bounded concurrent execution across tasks)
+        sem = asyncio.Semaphore(4)
+
+        async def _run_task_executor(t: AttackTask, ex_name: str) -> list[CandidateFinding]:
+            if ex_name == "business_logic" and "/refund" in t.canonical_path and exec_approval_id is None:
+                # Respect HITL gate: skip HIGH-risk refund test if not yet human-approved
+                return []
+            async with sem:
+                return await executors[ex_name].execute(t)
+
+        task_coros = [
+            _run_task_executor(task, ex_name)
+            for task in plan.tasks
+            for ex_name in task.executors
+        ]
+        task_results = await asyncio.gather(*task_coros)
         candidates: list[CandidateFinding] = []
-        for task in plan.tasks:
-            for ex_name in task.executors:
-                if ex_name == "business_logic" and "/refund" in task.canonical_path and exec_approval_id is None:
-                    # Respect HITL gate: skip HIGH-risk refund test if not yet human-approved
-                    continue
-                found = await executors[ex_name].execute(task)
-                candidates.extend(found)
+        for found in task_results:
+            candidates.extend(found)
         self._emit("execute_safely", f"Collected {len(candidates)} candidate findings", candidates=len(candidates))
 
         # Stage 6: Deterministic Verification
