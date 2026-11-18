@@ -324,6 +324,7 @@ export default function App() {
           {activeTab === 'surface' && (
             <AttackSurfaceView
               graphData={graphData}
+              tickets={tickets}
             />
           )}
 
