@@ -1,1 +1,118 @@
 @import "tailwindcss";
+
+/* ==========================================================================
+   Cybersecurity Command Center Design System
+   ========================================================================== */
+
+:root {
+  --color-cyber-deep: #060911;
+  --color-cyber-dark: #0a0f1d;
+  --color-cyber-surface: #0f172a;
+  --color-cyber-cyan: #06b6d4;
+  --color-cyber-violet: #8b5cf6;
+  --color-cyber-emerald: #10b981;
+}
+
+body {
+  background-color: #060911;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 15% 70%, rgba(16, 185, 129, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+/* Monospace font styling for code, paths, hashes */
+code, pre, .font-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* Sleek Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080d1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4;
+}
+
+/* Glassmorphism Panel Utilities */
+.cyber-glass {
+  background: rgba(13, 20, 36, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+}
+
+.cyber-glass-subtle {
+  background: rgba(10, 15, 29, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.cyber-glass-interactive {
+  background: rgba(13, 20, 36, 0.72);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cyber-glass-interactive:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.15);
+  transform: translateY(-1px);
+}
+
+/* Restrained Cyber Glow Accents */
+.glow-cyan-sm {
+  box-shadow: 0 0 12px -2px rgba(6, 182, 212, 0.25);
+}
+
+.glow-cyan-md {
+  box-shadow: 0 0 24px -4px rgba(6, 182, 212, 0.35);
+}
+
+.glow-emerald-sm {
+  box-shadow: 0 0 12px -2px rgba(16, 185, 129, 0.25);
+}
+
+.glow-violet-sm {
+  box-shadow: 0 0 12px -2px rgba(139, 92, 246, 0.25);
+}
+
+.glow-rose-sm {
+  box-shadow: 0 0 12px -2px rgba(244, 63, 94, 0.3);
+}
+
+/* Subtle Grid Background Pattern */
+.bg-cyber-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
+}
+
+/* Pulse animation utility */
+@keyframes cyber-pulse-slow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+}
+
+.animate-cyber-pulse {
+  animation: cyber-pulse-slow 3s infinite ease-in-out;
+}
