@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { MetricCard } from '../common/MetricCard'
 import { Panel } from '../common/Panel'
 import { SeverityBadge, StatusBadge, ClassificationBadge } from '../common/Badge'
+import { getAgentRobot } from '../agentCenter/RobotAvatars'
 import {
   IconShield,
   IconShieldAlert,
@@ -98,6 +99,60 @@ export function CommandCenter({
           icon={<IconDatabase className="w-4 h-4" />}
         />
       </section>
+
+      {/* Multi-Agent Operations Network Highlight Strip */}
+      <div
+        onClick={() => onSelectTab('operations')}
+        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 shadow-xl backdrop-blur-xl hover:border-cyan-400 hover:shadow-[0_0_25px_-4px_rgba(6,182,212,0.3)] transition-all"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)]">
+              <IconCpu className="h-6 w-6 text-cyan-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                  Autonomous Agent Operations Center
+                </h3>
+                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40 animate-pulse">
+                  INTERACTIVE PIPELINE
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Network of 9 multi-stage robotic agents connected via live data pathways. Inspect real-time execution states & dataflow.
+              </p>
+            </div>
+          </div>
+
+          {/* Mini Robot Roster */}
+          <div className="flex items-center gap-2 overflow-x-auto py-1">
+            <div title="Change Detection Agent">{getAgentRobot('change_detector', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Reconnaissance Agent">{getAgentRobot('recon', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="API Inventory Engine">{getAgentRobot('inventory', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Attack Planning Agent">{getAgentRobot('planner', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Safety Gateway">{getAgentRobot('safety_gateway', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="IDOR Executor">{getAgentRobot('exec_idor', 'COMPLETED', 30)}</div>
+            <div title="Business Logic Executor">{getAgentRobot('exec_bizlogic', 'COMPLETED', 30)}</div>
+            <div title="Auth Executor">{getAgentRobot('exec_auth', 'COMPLETED', 30)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Deterministic Verifier">{getAgentRobot('verifier', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Triage Agent">{getAgentRobot('triage', 'COMPLETED', 34)}</div>
+            <div className="w-2 h-0.5 bg-slate-700" />
+            <div title="Continuous Retest Agent">{getAgentRobot('retest', 'COMPLETED', 34)}</div>
+
+            <span className="ml-3 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 group-hover:bg-cyan-500/25 transition">
+              Open Canvas &rarr;
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Main Grid: Posture Overview + Quick Actions */}
       <div className="grid gap-6 lg:grid-cols-12">

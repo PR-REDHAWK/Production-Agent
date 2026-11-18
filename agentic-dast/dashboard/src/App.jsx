@@ -298,7 +298,15 @@ export default function App() {
             <AgentOperations
               events={events}
               busyAction={busyAction}
+              graphData={graphData}
+              inventory={inventory}
+              tickets={tickets}
+              gatewayState={gatewayState}
+              hitl={hitl}
+              health={health}
               onRunScan={handleRunScan}
+              onDeployV11={handleDeployV11}
+              onDeployV12={handleDeployV12}
               onPollWatchers={handlePollWatchers}
             />
           )}
