@@ -440,6 +440,7 @@ def create_control_app(
         return {"version": active_version, "webhook_result": webhook_result}
 
     @app.get("/api/events/stream")
+    @app.get("/api/v1/scan/stream")
     async def stream_events(once: bool = False) -> StreamingResponse:
         queue = state.subscribe()
 

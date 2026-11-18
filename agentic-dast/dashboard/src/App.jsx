@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { NAV_ITEMS } from './theme/designTokens'
+import { dastApi, SafeEventStream } from './api/client'
 import { Sidebar } from './components/shell/Sidebar'
 import { Header } from './components/shell/Header'
 import { HITLModal } from './components/shell/HITLModal'
@@ -12,25 +13,13 @@ import { RetestingView } from './components/views/RetestingView'
 import { AuditLogsView } from './components/views/AuditLogsView'
 import { SettingsView } from './components/views/SettingsView'
 
-async function apiJson(url, options = {}) {
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    ...options,
-  })
-  if (!res.ok) {
-    const msg = await res.text()
-    throw new Error(msg || `HTTP ${res.status}`)
-  }
-  return res.json()
-}
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('command')
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [health, setHealth] = useState(null)
   const [tickets, setTickets] = useState([])
   const [selectedTicketId, setSelectedTicketId] = useState(null)
-  const [graphData, setGraphData] = useState({ summary: null, endpoints: [] })
+  const [graphData, setGraphData] = useState({ summary: null, endpoints: [], nodes: [], links: [] })
   const [inventory, setInventory] = useState({ active_count: 0, zombie_count: 0, shadow_count: 0, entries: [] })
   const [hitl, setHitl] = useState({ pending_count: 0, pending: [], all: [] })
   const [gatewayState, setGatewayState] = useState({ metrics: null, recent_audit: [], canary_hits: [] })
@@ -39,53 +28,54 @@ export default function App() {
   const [errorMsg, setErrorMsg] = useState('')
   const [hitlModalOpen, setHitlModalOpen] = useState(false)
   const [sseConnected, setSseConnected] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   const refreshAll = useCallback(async () => {
     try {
       const [h, t, g, inv, ht, gw] = await Promise.all([
-        apiJson('/api/health'),
-        apiJson('/api/tickets'),
-        apiJson('/api/graph'),
-        apiJson('/api/inventory'),
-        apiJson('/api/hitl'),
-        apiJson('/api/gateway/metrics'),
+        dastApi.getHealth(),
+        dastApi.getTickets(),
+        dastApi.getGraph(),
+        dastApi.getInventory(),
+        dastApi.getHitlQueue(),
+        dastApi.getGatewayMetrics(),
       ])
       setHealth(h)
-      setTickets(t)
-      setGraphData(g)
-      setInventory(inv)
-      setHitl(ht)
-      setGatewayState(gw)
+      setTickets(Array.isArray(t) ? t : [])
+      setGraphData(g || { summary: null, endpoints: [], nodes: [], links: [] })
+      setInventory(inv || { active_count: 0, zombie_count: 0, shadow_count: 0, entries: [] })
+      setHitl(ht || { pending_count: 0, pending: [], all: [] })
+      setGatewayState(gw || { metrics: null, recent_audit: [], canary_hits: [] })
       setErrorMsg('')
-      if (t.length > 0) {
+      if (Array.isArray(t) && t.length > 0) {
         setSelectedTicketId((prev) => (prev && t.some((x) => x.ticket_id === prev) ? prev : t[0].ticket_id))
       }
     } catch (err) {
-      setErrorMsg(`Control plane unreachable: ${err.message}`)
+      setErrorMsg(err.message || 'Control plane unreachable')
+    } finally {
+      setInitialLoading(false)
     }
   }, [])
 
   useEffect(() => {
     refreshAll()
-    apiJson('/api/events/history')
-      .then((hist) => setEvents(hist.slice().reverse()))
+    dastApi.getEventsHistory()
+      .then((hist) => {
+        if (Array.isArray(hist)) {
+          setEvents(hist.slice().reverse())
+        }
+      })
       .catch(() => {})
   }, [refreshAll])
 
   useEffect(() => {
-    const es = new EventSource('/api/events/stream')
-    es.onopen = () => setSseConnected(true)
-    es.onerror = () => setSseConnected(false)
-    es.addEventListener('stage', (e) => {
-      try {
-        const parsed = JSON.parse(e.data)
-        setEvents((prev) => {
-          const key = `${parsed.timestamp}-${parsed.stage}-${parsed.message}`
-          if (prev.some((p) => `${p.timestamp}-${p.stage}-${p.message}` === key)) {
-            return prev
-          }
-          return [parsed, ...prev].slice(0, 100)
-        })
+    const stream = new SafeEventStream({
+      endpoint: '/api/events/stream',
+      onStatusChange: (status) => {
+        setSseConnected(status === 'CONNECTED')
+      },
+      onEvent: (parsed) => {
+        setEvents((prev) => [parsed, ...prev].slice(0, 100))
         if (
           [
             'recon',
@@ -122,11 +112,11 @@ export default function App() {
           setBusyAction('')
           setErrorMsg(parsed.message)
         }
-      } catch {
-        // Ignore malformed event payload
-      }
+      },
     })
-    return () => es.close()
+
+    stream.connect()
+    return () => stream.close()
   }, [refreshAll])
 
   const runAction = async (label, fn, { background = false } = {}) => {
@@ -139,7 +129,7 @@ export default function App() {
         setBusyAction('')
       }
     } catch (err) {
-      setErrorMsg(err.message)
+      setErrorMsg(err.message || 'Action failed')
       setBusyAction('')
     }
   }
@@ -148,14 +138,11 @@ export default function App() {
     runAction(
       'Executing 8-stage DAST scan cycle...',
       () =>
-        apiJson('/api/scans/run', {
-          method: 'POST',
-          body: JSON.stringify({
-            auto_approve_hitl_execution: true,
-            background: true,
-            use_playwright: Boolean(options.usePlaywright),
-            delta_only: Boolean(options.deltaOnly),
-          }),
+        dastApi.startScan({
+          auto_approve_hitl_execution: true,
+          background: true,
+          use_playwright: Boolean(options.usePlaywright),
+          delta_only: Boolean(options.deltaOnly),
         }),
       { background: true }
     )
@@ -165,15 +152,12 @@ export default function App() {
     runAction(
       'Deploying target v1.1 (vulnerable release)...',
       () =>
-        apiJson('/api/sim/switch', {
-          method: 'POST',
-          body: JSON.stringify({
-            version: 'v1.1',
-            reset_state: true,
-            trigger_webhook: true,
-            is_fix_deploy: false,
-            background: true,
-          }),
+        dastApi.switchSimVersion({
+          version: 'v1.1',
+          reset_state: true,
+          trigger_webhook: true,
+          is_fix_deploy: false,
+          background: true,
         }),
       { background: true }
     )
@@ -183,38 +167,31 @@ export default function App() {
     runAction(
       'Deploying target v1.2 (remediated release & retest)...',
       () =>
-        apiJson('/api/sim/switch', {
-          method: 'POST',
-          body: JSON.stringify({
-            version: 'v1.2',
-            reset_state: true,
-            trigger_webhook: true,
-            is_fix_deploy: true,
-            background: true,
-          }),
+        dastApi.switchSimVersion({
+          version: 'v1.2',
+          reset_state: true,
+          trigger_webhook: true,
+          is_fix_deploy: true,
+          background: true,
         }),
       { background: true }
     )
   }
 
   const handlePollWatchers = () => {
-    runAction('Polling continuous drift watchers...', () => apiJson('/api/watchers/poll', { method: 'POST' }))
+    runAction('Polling continuous drift watchers...', () => dastApi.pollWatchers())
   }
 
   const handleRetestTicket = (ticketId) => {
     runAction(`Retesting verified PoC for ${ticketId}...`, () =>
-      apiJson(`/api/tickets/${ticketId}/retest`, { method: 'POST' })
+      dastApi.retestTicket(ticketId)
     )
   }
 
   const handleDecideHITL = (approvalId, approve) => {
     runAction(
       `${approve ? 'Approving' : 'Rejecting'} HITL ${approvalId}...`,
-      () =>
-        apiJson(`/api/hitl/${approvalId}/decide`, {
-          method: 'POST',
-          body: JSON.stringify({ approve }),
-        })
+      () => dastApi.decideHitl(approvalId, approve)
     )
   }
 

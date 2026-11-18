@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react'
+import { dastApi } from '../../api/client'
 import { Panel } from '../common/Panel'
 import { MetricCard } from '../common/MetricCard'
 import { MethodBadge, TagBadge, SeverityBadge } from '../common/Badge'
@@ -258,7 +259,7 @@ export function AttackSurfaceView({
 
             {/* OpenAPI Download */}
             <a
-              href="/api/openapi.json"
+              href={dastApi.getOpenApiUrl()}
               download="inferred-openapi-3.1.json"
               className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 transition shadow-[0_0_10px_-2px_rgba(6,182,212,0.25)]"
             >

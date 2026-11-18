@@ -1,4 +1,5 @@
 import React from 'react'
+import { dastApi } from '../../api/client'
 import { SSEStatusIndicator, EnvironmentIndicator } from '../common/StatusIndicator'
 import { IconPlay, IconDownload, IconShieldAlert, IconRefresh } from '../common/Icons'
 
@@ -68,7 +69,7 @@ export function Header({
 
           {/* Export OpenAPI */}
           <a
-            href="/api/openapi.json"
+            href={dastApi.getOpenApiUrl()}
             download="inferred-openapi-3.1.json"
             className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 transition"
           >
