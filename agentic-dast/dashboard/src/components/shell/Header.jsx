@@ -88,16 +88,16 @@ export function Header({
             <span>OpenAPI 3.1</span>
           </a>
 
-          {/* HITL Queue Button with Alert Pill */}
+          {/* HITL Queue Button */}
           <button
             onClick={onOpenHitl}
-            className="relative flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 transition shadow-[0_0_12px_-2px_rgba(244,63,94,0.3)]"
+            className="flex items-center gap-1.5 rounded-lg bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition"
           >
             <IconShieldAlert className="h-3.5 w-3.5 text-rose-400" />
             <span>HITL Queue</span>
             {pendingHitlCount > 0 && (
-              <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 font-mono text-[10px] font-bold text-white shadow-[0_0_8px_#f43f5e]">
-                {pendingHitlCount}
+              <span className="font-mono text-xs font-bold text-rose-400">
+                ({pendingHitlCount})
               </span>
             )}
           </button>

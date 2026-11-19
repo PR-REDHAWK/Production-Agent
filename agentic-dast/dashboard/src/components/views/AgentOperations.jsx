@@ -110,7 +110,7 @@ export function AgentOperations({
             icon={<IconZap className="w-4 h-4" />}
           >
             <div className="space-y-3.5">
-              <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs">
+              <div className="flex items-center justify-between rounded-xl bg-slate-950/60 p-3 text-xs">
                 <div>
                   <span className="font-semibold text-slate-200">Playwright Chromium Crawl</span>
                   <p className="text-[11px] text-slate-400">Headless browser DOM interaction</p>
@@ -123,7 +123,7 @@ export function AgentOperations({
                 />
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-xs">
+              <div className="flex items-center justify-between rounded-xl bg-slate-950/60 p-3 text-xs">
                 <div>
                   <span className="font-semibold text-slate-200">Delta-Only Scope</span>
                   <p className="text-[11px] text-slate-400">Target modified commit routes only</p>
@@ -147,7 +147,7 @@ export function AgentOperations({
               <button
                 disabled={Boolean(busyAction)}
                 onClick={onPollWatchers}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/80 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900/80 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition"
               >
                 <IconSparkles className="h-3.5 w-3.5 text-cyan-400" />
                 <span>Poll Drift Watchers (Hash / DNS)</span>
@@ -170,7 +170,7 @@ export function AgentOperations({
                     onClick={() => setFilterStage(tab)}
                     className={`rounded px-2 py-1 text-[10px] font-mono font-medium transition ${
                       filterStage === tab
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                        ? 'bg-slate-800 text-cyan-300 font-semibold'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
@@ -189,11 +189,11 @@ export function AgentOperations({
                 filteredEvents.map((ev, idx) => (
                   <div
                     key={`${ev.timestamp}-${idx}`}
-                    className="rounded-xl border border-slate-800/80 bg-slate-950/70 p-3 text-xs hover:border-slate-700 transition"
+                    className="rounded-xl bg-slate-950/70 p-3 text-xs hover:bg-slate-900/60 transition"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="rounded bg-cyan-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/30">
+                        <span className="font-mono text-xs font-bold text-cyan-300">
                           {ev.stage}
                         </span>
                       </div>
@@ -205,7 +205,7 @@ export function AgentOperations({
                     <p className="mt-2 text-slate-200 font-sans leading-relaxed">{ev.message}</p>
 
                     {ev.details && Object.keys(ev.details).length > 0 && (
-                      <pre className="mt-2 overflow-x-auto rounded-lg border border-slate-900 bg-slate-950 p-2 font-mono text-[10px] text-slate-400">
+                      <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950 p-2 font-mono text-[10px] text-slate-400">
                         {JSON.stringify(ev.details, null, 2)}
                       </pre>
                     )}

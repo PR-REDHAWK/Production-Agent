@@ -21,7 +21,7 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-slate-800/80 px-4">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 text-cyan-300 ring-1 ring-cyan-500/40 shadow-[0_0_15px_-2px_rgba(6,182,212,0.3)]">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_-2px_rgba(6,182,212,0.3)]">
             <IconShield className="h-5 w-5 text-cyan-400" />
             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
@@ -33,7 +33,7 @@ export function Sidebar({
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold tracking-tight text-white text-sm">ANTIGRAVITY</span>
-                <span className="rounded bg-cyan-500/20 px-1 py-0.2 text-[9px] font-mono font-bold text-cyan-300 border border-cyan-500/40">
+                <span className="text-[10px] font-mono font-bold text-cyan-300">
                   DAST
                 </span>
               </div>
@@ -68,8 +68,8 @@ export function Sidebar({
               title={collapsed ? item.label : undefined}
               className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-medium transition-all ${
                 isActive
-                  ? 'bg-gradient-to-r from-cyan-500/15 to-purple-500/10 text-white border border-cyan-500/40 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)]'
-                  : 'text-slate-400 hover:bg-slate-900/80 hover:text-slate-200 border border-transparent'
+                  ? 'bg-slate-900 text-white'
+                  : 'text-slate-400 hover:bg-slate-900/60 hover:text-slate-200'
               } ${collapsed ? 'justify-center px-0' : ''}`}
             >
               {/* Active left indicator bar */}
@@ -90,13 +90,11 @@ export function Sidebar({
                   <span className="truncate">{item.label}</span>
                   {typeof count === 'number' && count > 0 && (
                     <span
-                      className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold ${
-                        item.id === 'findings'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      className={`ml-2 text-xs font-mono font-semibold ${
+                        item.id === 'findings' ? 'text-rose-400' : 'text-slate-400'
                       }`}
                     >
-                      {count}
+                      ({count})
                     </span>
                   )}
                 </div>
@@ -117,17 +115,17 @@ export function Sidebar({
             <IconChevronRight className="h-4 w-4" />
           </button>
         ) : (
-          <div className="rounded-xl border border-slate-800/80 bg-slate-900/50 p-2.5">
-            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-              <span>RATE BUDGET</span>
-              <span className="text-cyan-300 font-semibold">{rl.global_rps ?? 8} RPS</span>
+          <div className="rounded-xl bg-slate-900/50 p-2.5">
+            <div className="flex items-center justify-between text-xs text-slate-400 font-sans">
+              <span className="font-medium text-slate-300">Rate Budget</span>
+              <span className="font-mono text-cyan-300 font-semibold">{rl.global_rps ?? 8} RPS</span>
             </div>
-            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
-              <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-400" />
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-800">
+              <div className="h-full w-2/3 rounded bg-gradient-to-r from-cyan-500 to-emerald-400" />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span>SAFETY GATEWAY</span>
-              <span className={gatewayMetrics?.circuit_breaker?.state === 'EMERGENCY_PAUSE' ? 'text-rose-400 font-bold' : 'text-emerald-400'}>
+            <div className="mt-2 flex items-center justify-between text-xs text-slate-400 font-sans">
+              <span className="font-medium text-slate-400">Safety Gateway</span>
+              <span className={`font-mono text-[11px] font-semibold ${gatewayMetrics?.circuit_breaker?.state === 'EMERGENCY_PAUSE' ? 'text-rose-400' : 'text-emerald-400'}`}>
                 {gatewayMetrics?.circuit_breaker?.state === 'EMERGENCY_PAUSE' ? 'PAUSED' : 'PROTECTED'}
               </span>
             </div>

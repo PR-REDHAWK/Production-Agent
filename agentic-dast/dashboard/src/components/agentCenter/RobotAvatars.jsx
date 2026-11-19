@@ -53,10 +53,10 @@ export function RobotBase({
             <stop offset="0.5" stopColor="#22d3ee" />
             <stop offset="1" stopColor="#0891b2" />
           </linearGradient>
-          <linearGradient id="violetVisor" x1="0" y1="0" x2="64" y2="0" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#8b5cf6" />
-            <stop offset="0.5" stopColor="#c084fc" />
-            <stop offset="1" stopColor="#7c3aed" />
+          <linearGradient id="skyVisor" x1="0" y1="0" x2="64" y2="0" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#0284c7" />
+            <stop offset="0.5" stopColor="#38bdf8" />
+            <stop offset="1" stopColor="#0369a1" />
           </linearGradient>
           <linearGradient id="emeraldVisor" x1="0" y1="0" x2="64" y2="0" gradientUnits="userSpaceOnUse">
             <stop stopColor="#10b981" />
@@ -279,7 +279,7 @@ export function RobotAuth({ status = 'IDLE', size = 42 }) {
   )
 }
 
-// 6D. API Hygiene Robot: Decontamination ultraviolet lens
+// 6D. API Hygiene Robot: Decontamination sterilization lens
 export function RobotHygiene({ status = 'IDLE', size = 42 }) {
   return (
     <RobotBase size={size} status={status} glowColor="rgba(56, 189, 248, 0.4)">
@@ -303,19 +303,19 @@ export function RobotHygiene({ status = 'IDLE', size = 42 }) {
 // 6E. SSRF Executor Robot: Directional transmitter beacon & echo receiver
 export function RobotSSRF({ status = 'IDLE', size = 42 }) {
   return (
-    <RobotBase size={size} status={status} glowColor="rgba(168, 85, 247, 0.4)">
+    <RobotBase size={size} status={status} glowColor="rgba(56, 189, 248, 0.4)">
       {/* High-Gain Beacon Antenna */}
-      <line x1="32" y1="7" x2="32" y2="19" stroke="#a855f7" strokeWidth="2" />
-      <circle cx="32" cy="6" r="3" fill="#c084fc" />
-      <path d="M25 10 C25 6, 39 6, 39 10" stroke="#a855f7" strokeWidth="1.5" fill="none" />
+      <line x1="32" y1="7" x2="32" y2="19" stroke="#38bdf8" strokeWidth="2" />
+      <circle cx="32" cy="6" r="3" fill="#7dd3fc" />
+      <path d="M25 10 C25 6, 39 6, 39 10" stroke="#38bdf8" strokeWidth="1.5" fill="none" />
 
       <rect x="16" y="20" width="32" height="28" rx="7" fill="url(#metalGrad)" stroke="#475569" strokeWidth="2" />
       {/* Radar Sweep Screen */}
-      <circle cx="32" cy="33" r="7" fill="#090d16" stroke="#a855f7" strokeWidth="1.5" />
-      <line x1="32" y1="33" x2="37" y2="30" stroke="#c084fc" strokeWidth="1.5" />
+      <circle cx="32" cy="33" r="7" fill="#090d16" stroke="#38bdf8" strokeWidth="1.5" />
+      <line x1="32" y1="33" x2="37" y2="30" stroke="#7dd3fc" strokeWidth="1.5" />
 
       {/* Canary Outbound Port Indicator */}
-      <circle cx="32" cy="44" r="2" fill="#c084fc" />
+      <circle cx="32" cy="44" r="2" fill="#7dd3fc" />
     </RobotBase>
   )
 }

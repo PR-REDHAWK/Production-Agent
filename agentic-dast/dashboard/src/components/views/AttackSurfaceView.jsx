@@ -71,7 +71,7 @@ export function AttackSurfaceView({
         type: 'Role',
         x: 110,
         y: 80 + idx * 80,
-        color: '#8b5cf6',
+        color: '#38bdf8',
       })
     })
 
@@ -203,7 +203,7 @@ export function AttackSurfaceView({
           label="Multi-Tenant Roles"
           value={summary.roles_count ?? 4}
           sub="Symbolic Access Matrix"
-          tone="violet"
+          tone="slate"
           icon={<IconSliders className="w-4 h-4" />}
         />
         <MetricCard
@@ -261,7 +261,7 @@ export function AttackSurfaceView({
             <a
               href={dastApi.getOpenApiUrl()}
               download="inferred-openapi-3.1.json"
-              className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 transition shadow-[0_0_10px_-2px_rgba(6,182,212,0.25)]"
+              className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 transition shadow-[0_0_10px_-2px_rgba(6,182,212,0.25)]"
             >
               <IconDownload className="h-3.5 w-3.5" />
               <span>OpenAPI 3.1</span>
@@ -269,14 +269,14 @@ export function AttackSurfaceView({
           </div>
         }
       >
-        {/* Flow Filter Pills */}
+        {/* Flow Filter */}
         <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
-          <span className="font-mono text-[10px] uppercase text-slate-500 mr-1">FILTER FLOW:</span>
+          <span className="text-xs text-slate-400 mr-2 font-medium">Filter Flow:</span>
           <button
             onClick={() => setFilterFlow('ALL')}
             className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
               filterFlow === 'ALL'
-                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                ? 'bg-slate-800 text-cyan-300'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
           >
@@ -290,7 +290,7 @@ export function AttackSurfaceView({
                 onClick={() => setFilterFlow(flow)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                   filterFlow === flow
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    ? 'bg-slate-800 text-emerald-300'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -302,7 +302,7 @@ export function AttackSurfaceView({
 
         {/* Interactive SVG Canvas */}
         <div
-          className="relative h-[560px] w-full overflow-hidden rounded-xl border border-slate-800/80 bg-slate-950 cursor-grab active:cursor-grabbing select-none"
+          className="relative h-[560px] w-full overflow-hidden rounded-xl bg-slate-950 cursor-grab active:cursor-grabbing select-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -384,7 +384,7 @@ export function AttackSurfaceView({
                         width="100"
                         height="28"
                         rx="14"
-                        fill={node.type === 'BusinessFlow' ? '#064e3b' : node.type === 'Role' ? '#2e1065' : '#1e293b'}
+                        fill={node.type === 'BusinessFlow' ? '#064e3b' : '#0f172a'}
                         stroke={isSelected ? '#22d3ee' : node.color}
                         strokeWidth={isSelected ? 2 : 1}
                         className="transition-all group-hover:brightness-125"
@@ -416,15 +416,15 @@ export function AttackSurfaceView({
             </g>
           </svg>
 
-          {/* Interactive Instructions Pill */}
-          <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg border border-slate-800 bg-slate-900/80 px-2.5 py-1 text-[10px] font-mono text-slate-400 backdrop-blur-md">
+          {/* Interactive Instructions */}
+          <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-slate-900/80 px-2.5 py-1 text-[10px] font-mono text-slate-400 backdrop-blur-md">
             Click node to inspect details · Drag to pan · Mouse zoom active
           </div>
 
           {/* Empty State Overlay */}
           {endpoints.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-6 backdrop-blur-md max-w-md shadow-2xl">
+              <div className="rounded-2xl bg-slate-950/90 p-6 backdrop-blur-md max-w-md shadow-2xl">
                 <IconCpu className="mx-auto h-8 w-8 text-cyan-400 mb-2" />
                 <h4 className="text-sm font-bold text-white">Knowledge Graph Awaiting Discovery</h4>
                 <p className="mt-1 text-xs text-slate-400 leading-relaxed font-sans">
@@ -440,17 +440,17 @@ export function AttackSurfaceView({
 
         {/* Node Inspection Detail Drawer */}
         {selectedNode && (
-          <div className="mt-4 rounded-xl border border-cyan-500/40 bg-slate-950/90 p-5 shadow-2xl space-y-4">
+          <div className="mt-4 rounded-xl bg-slate-950/90 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="rounded bg-cyan-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/30">
-                  {selectedNode.type.toUpperCase()}
+                <span className="font-mono text-xs font-bold text-cyan-300">
+                  {selectedNode.type}
                 </span>
                 <h3 className="font-mono text-sm font-bold text-white">{selectedNode.label}</h3>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="rounded-lg border border-slate-800 p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
               >
                 <IconX className="h-4 w-4" />
               </button>
@@ -460,19 +460,19 @@ export function AttackSurfaceView({
               <div className="space-y-3 text-xs font-mono">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <span className="text-slate-500 text-[10px] block">HTTP METHOD</span>
+                    <span className="text-slate-400 text-xs block mb-1 font-sans">Method</span>
                     <MethodBadge method={selectedNode.raw.method} />
                   </div>
                   <div>
-                    <span className="text-slate-500 text-[10px] block">BUSINESS FLOW</span>
+                    <span className="text-slate-400 text-xs block mb-1 font-sans">Business Flow</span>
                     <span className="text-emerald-400 font-bold">{selectedNode.raw.business_flow || 'unmapped'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-[10px] block">ENGINEERING OWNER</span>
+                    <span className="text-slate-400 text-xs block mb-1 font-sans">Engineering Owner</span>
                     <span className="text-slate-300 font-bold">{selectedNode.raw.owner_team || 'Unassigned'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500 text-[10px] block">THREAT STATUS</span>
+                    <span className="text-slate-400 text-xs block mb-1 font-sans">Threat Status</span>
                     {selectedNode.isVuln ? (
                       <span className="text-rose-400 font-bold">VULNERABLE ({selectedNode.vulns.length})</span>
                     ) : (
@@ -483,7 +483,7 @@ export function AttackSurfaceView({
 
                 {/* Sensitivity Tags */}
                 <div>
-                  <span className="text-slate-500 text-[10px] block mb-1">SENSITIVITY CLASSIFICATION</span>
+                  <span className="text-slate-400 text-xs block mb-1 font-sans">Sensitivity Classification</span>
                   <div className="flex flex-wrap gap-1">
                     {(selectedNode.raw.sensitivity_tags || []).map((tag) => (
                       <TagBadge key={tag} tone="amber">{tag}</TagBadge>
@@ -493,10 +493,10 @@ export function AttackSurfaceView({
 
                 {/* Permitted Roles */}
                 <div>
-                  <span className="text-slate-500 text-[10px] block mb-1">AUTHENTICATED ROLES PERMITTED</span>
+                  <span className="text-slate-400 text-xs block mb-1 font-sans">Authenticated Roles Permitted</span>
                   <div className="flex flex-wrap gap-1">
                     {(selectedNode.raw.roles || []).map((r) => (
-                      <TagBadge key={r} tone="violet">{r}</TagBadge>
+                      <TagBadge key={r} tone="slate">{r}</TagBadge>
                     ))}
                   </div>
                 </div>
@@ -504,10 +504,10 @@ export function AttackSurfaceView({
                 {/* Parameters */}
                 {selectedNode.raw.params && selectedNode.raw.params.length > 0 && (
                   <div>
-                    <span className="text-slate-500 text-[10px] block mb-1">ACCEPTED PARAMETERS</span>
+                    <span className="text-slate-400 text-xs block mb-1 font-sans">Accepted Parameters</span>
                     <div className="flex flex-wrap gap-1 text-[11px] text-cyan-300">
                       {selectedNode.raw.params.map((p) => (
-                        <span key={p} className="rounded bg-slate-900 px-2 py-0.5 border border-slate-800">
+                        <span key={p} className="rounded bg-slate-900 px-2 py-0.5 text-cyan-300">
                           {p}
                         </span>
                       ))}
@@ -517,7 +517,7 @@ export function AttackSurfaceView({
 
                 {/* Active Vulnerabilities on this Node */}
                 {selectedNode.isVuln && (
-                  <div className="rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 space-y-2">
+                  <div className="rounded-xl bg-rose-950/30 p-3 space-y-2">
                     <span className="text-rose-400 font-bold flex items-center gap-1.5">
                       <IconShieldAlert className="w-3.5 h-3.5" />
                       <span>Active Verified Vulnerabilities</span>

@@ -195,7 +195,7 @@ export function CommandCenter({
         <MetricCard
           label="Circuit Breaker"
           value={cb.state || 'CLOSED'}
-          sub={`p95: ${cb.p95_latency_ms ?? 0}ms · 5xx: ${((cb.five_xx_ratio ?? 0) * 100).toFixed(1)}%`}
+          sub={`p95: ${cb.p95_latency_ms ?? 0}ms, 5xx: ${((cb.five_xx_ratio ?? 0) * 100).toFixed(1)}%`}
           tone={cb.state === 'EMERGENCY_PAUSE' ? 'rose' : 'emerald'}
           icon={<IconActivity className="w-4 h-4" />}
         />
@@ -217,23 +217,18 @@ export function CommandCenter({
           label="Zombie / Shadow"
           value={`${inventory.zombie_count} / ${inventory.shadow_count}`}
           sub={`Active: ${inventory.active_count}`}
-          tone="violet"
+          tone="slate"
           icon={<IconDatabase className="w-4 h-4" />}
         />
       </section>
 
       {/* Hackathon Demonstration Storyline Stepper */}
-      <div className="relative overflow-hidden rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-950 p-5 shadow-xl backdrop-blur-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-slate-950/80 p-5 shadow-xl backdrop-blur-xl">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1.5 flex-1 min-w-[280px]">
-            <div className="flex items-center gap-2.5">
-              <span className="rounded-full bg-cyan-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
-                {demoStage.badge}
-              </span>
-              <h2 className="text-sm font-bold text-white tracking-tight">
-                {demoStage.title}
-              </h2>
-            </div>
+            <h2 className="text-sm font-bold text-white tracking-tight">
+              {demoStage.title}
+            </h2>
             <p className="text-xs text-slate-300 font-sans leading-relaxed max-w-2xl">
               {demoStage.desc}
             </p>
@@ -253,17 +248,17 @@ export function CommandCenter({
         </div>
 
         {/* 4-Step Visual Progress Track */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/80 text-[10px] font-mono">
-          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 1 ? 'border-cyan-500/40 bg-cyan-950/20 text-cyan-300' : 'border-slate-800 text-slate-500'}`}>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/50 text-xs font-mono">
+          <div className={`text-center py-1 ${demoStage.step >= 1 ? 'text-cyan-300 font-semibold' : 'text-slate-500'}`}>
             1. Baseline (v1.0)
           </div>
-          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 2 ? 'border-amber-500/40 bg-amber-950/20 text-amber-300' : 'border-slate-800 text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 2 ? 'text-amber-300 font-semibold' : 'text-slate-500'}`}>
             2. Planted Flaws (v1.1)
           </div>
-          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 3 ? 'border-rose-500/40 bg-rose-950/20 text-rose-300' : 'border-slate-800 text-slate-500'}`}>
-            3. DAST Detection & Triage
+          <div className={`text-center py-1 ${demoStage.step >= 3 ? 'text-rose-300 font-semibold' : 'text-slate-500'}`}>
+            3. DAST Detection and Triage
           </div>
-          <div className={`p-1.5 rounded-lg border text-center ${demoStage.step >= 4 ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300' : 'border-slate-800 text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 4 ? 'text-emerald-300 font-semibold' : 'text-slate-500'}`}>
             4. Closed-Loop Retest (v1.2)
           </div>
         </div>
@@ -272,24 +267,19 @@ export function CommandCenter({
       {/* Multi-Agent Operations Network Highlight Strip */}
       <div
         onClick={() => onSelectTab('operations')}
-        className="cursor-pointer group relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 shadow-xl backdrop-blur-xl hover:border-cyan-400 hover:shadow-[0_0_25px_-4px_rgba(6,182,212,0.3)] transition-all"
+        className="cursor-pointer group relative overflow-hidden rounded-2xl bg-slate-950/80 p-4 shadow-xl backdrop-blur-xl hover:bg-slate-900/90 transition-all"
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)]">
               <IconCpu className="h-6 w-6 text-cyan-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
-                  Autonomous Agent Operations Center
-                </h3>
-                <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40 animate-pulse">
-                  INTERACTIVE PIPELINE
-                </span>
-              </div>
+              <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                Autonomous Agent Operations Center
+              </h3>
               <p className="mt-0.5 text-xs text-slate-400">
-                Network of 9 multi-stage robotic agents connected via live data pathways. Inspect real-time execution states & dataflow.
+                Network of 9 multi-stage robotic agents connected via live data pathways. Inspect runtime inputs and state transitions.
               </p>
             </div>
           </div>
@@ -316,7 +306,7 @@ export function CommandCenter({
             <div className="w-2 h-0.5 bg-slate-700" />
             <div title="Continuous Retest Agent">{getAgentRobot('retest', 'COMPLETED', 34)}</div>
 
-            <span className="ml-3 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 group-hover:bg-cyan-500/25 transition">
+            <span className="ml-3 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 group-hover:bg-cyan-500/25 transition">
               Open Canvas &rarr;
             </span>
           </div>
@@ -366,10 +356,10 @@ export function CommandCenter({
             {/* Severity Distribution Bar */}
             <div className="mt-6 space-y-2">
               <div className="flex justify-between text-xs font-mono text-slate-400">
-                <span>VULNERABILITY SEVERITY BREAKDOWN</span>
+                <span className="font-semibold text-slate-300">Severity Distribution</span>
                 <span>{tickets.length} TOTAL VERIFIED</span>
               </div>
-              <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-950 border border-slate-800">
+              <div className="flex h-3 w-full overflow-hidden rounded bg-slate-950">
                 {tickets.length === 0 ? (
                   <div className="w-full bg-emerald-500/30 text-center text-[9px] text-emerald-300">
                     CLEAN BASELINE
@@ -415,16 +405,16 @@ export function CommandCenter({
             icon={<IconCheck className="w-4 h-4 text-emerald-400" />}
           >
             <div className="grid grid-cols-3 gap-3 text-center font-mono text-xs">
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-                <span className="text-slate-500 text-[10px] block">CANDIDATES</span>
+              <div className="rounded-xl bg-slate-950/70 p-3">
+                <span className="text-slate-500 text-[10px] block">Candidates</span>
                 <span className="text-slate-200 text-lg font-bold mt-0.5 block">{candidateCount}</span>
               </div>
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3">
-                <span className="text-emerald-400 text-[10px] block font-semibold">CONFIRMED</span>
+              <div className="rounded-xl bg-emerald-950/20 p-3">
+                <span className="text-emerald-400 text-[10px] block font-semibold">Confirmed</span>
                 <span className="text-emerald-300 text-lg font-bold mt-0.5 block">{verifiedCount}</span>
               </div>
-              <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
-                <span className="text-slate-500 text-[10px] block">SUPPRESSED</span>
+              <div className="rounded-xl bg-slate-950/70 p-3">
+                <span className="text-slate-500 text-[10px] block">Suppressed</span>
                 <span className="text-slate-400 text-lg font-bold mt-0.5 block">{suppressedCount}</span>
               </div>
             </div>
@@ -451,7 +441,7 @@ export function CommandCenter({
             }
           >
             {openTickets.length === 0 ? (
-              <div className="rounded-xl border border-slate-800/80 bg-slate-950/40 p-8 text-center text-xs text-slate-400">
+              <div className="rounded-xl bg-slate-950/40 p-8 text-center text-xs text-slate-400">
                 <p className="font-semibold text-slate-300">Zero active vulnerabilities detected.</p>
                 <p className="mt-1 text-slate-500">
                   Run a full scan or deploy simulated flaws (v1.1) to test the agentic pipeline.
@@ -466,7 +456,7 @@ export function CommandCenter({
                       onSelectTicket(ticket.ticket_id)
                       onSelectTab('findings')
                     }}
-                    className="cursor-pointer rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 hover:border-cyan-500/40 hover:bg-slate-900/80 transition"
+                    className="cursor-pointer rounded-xl bg-slate-950/60 p-3.5 hover:bg-slate-900/80 transition"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -519,7 +509,7 @@ export function CommandCenter({
                       <td className="py-2.5 pr-3 text-rose-300 font-bold">{scan.findingsFound}</td>
                       <td className="py-2.5 pr-3 text-slate-400">{scan.duration}</td>
                       <td className="py-2.5">
-                        <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30">
+                        <span className="font-mono text-[11px] font-bold text-emerald-400">
                           {scan.status}
                         </span>
                       </td>

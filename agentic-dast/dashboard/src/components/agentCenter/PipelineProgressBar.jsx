@@ -15,11 +15,11 @@ export function PipelineProgressBar({
   const isPause = circuitBreakerState === 'EMERGENCY_PAUSE'
 
   return (
-    <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-5 backdrop-blur-xl shadow-lg">
+    <div className="rounded-2xl bg-slate-950/70 p-5 backdrop-blur-xl shadow-lg">
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Left: Overall Scan Progress Status */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
             <IconActivity className="h-5 w-5" />
           </div>
           <div>
@@ -28,12 +28,12 @@ export function PipelineProgressBar({
                 DAST Pipeline Orchestrator
               </span>
               <span
-                className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold uppercase border ${
+                className={`font-mono text-xs font-semibold ${
                   isScanning
-                    ? 'border-cyan-500/40 bg-cyan-500/15 text-cyan-300 animate-pulse'
+                    ? 'text-cyan-300 animate-pulse'
                     : isPause
-                    ? 'border-rose-500/40 bg-rose-500/15 text-rose-300'
-                    : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300'
+                    ? 'text-rose-400'
+                    : 'text-emerald-400'
                 }`}
               >
                 {isScanning ? 'RUNNING' : isPause ? 'CIRCUIT PAUSE' : 'STANDBY'}
@@ -63,10 +63,10 @@ export function PipelineProgressBar({
         </div>
       </div>
 
-      {/* Futuristic Progress Bar */}
-      <div className="mt-4 relative h-2.5 w-full overflow-hidden rounded-full bg-slate-900 border border-slate-800">
+      {/* Progress Bar */}
+      <div className="mt-4 relative h-2 w-full overflow-hidden rounded bg-slate-900">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-emerald-400 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+          className="h-full rounded bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
           style={{ width: `${Math.max(4, pipelineProgress)}%` }}
         />
       </div>

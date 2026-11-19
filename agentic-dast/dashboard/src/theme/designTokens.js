@@ -20,10 +20,10 @@ export const THEME = {
         light: '#22d3ee',
         glow: 'rgba(6, 182, 212, 0.3)',
       },
-      violet: {
-        primary: '#8b5cf6',
-        light: '#a78bfa',
-        glow: 'rgba(139, 92, 246, 0.3)',
+      slate: {
+        primary: '#64748b',
+        light: '#94a3b8',
+        glow: 'rgba(100, 116, 139, 0.2)',
       },
       emerald: {
         primary: '#10b981',
@@ -47,76 +47,68 @@ export const THEME = {
 export const SEVERITY_CONFIG = {
   CRITICAL: {
     label: 'CRITICAL',
-    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-[0_0_12px_-2px_rgba(244,63,94,0.3)]',
-    dot: 'bg-rose-400 shadow-[0_0_8px_#f43f5e]',
-    text: 'text-rose-400',
-    border: 'border-rose-500/40',
+    color: 'text-rose-400',
+    dot: 'bg-rose-400',
   },
   HIGH: {
     label: 'HIGH',
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/40 shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]',
-    dot: 'bg-amber-400 shadow-[0_0_8px_#f59e0b]',
-    text: 'text-amber-400',
-    border: 'border-amber-500/40',
+    color: 'text-amber-400',
+    dot: 'bg-amber-400',
   },
   MEDIUM: {
     label: 'MEDIUM',
-    badge: 'bg-sky-500/15 text-sky-300 border-sky-500/40 shadow-[0_0_12px_-2px_rgba(14,165,233,0.25)]',
-    dot: 'bg-sky-400 shadow-[0_0_8px_#38bdf8]',
-    text: 'text-sky-400',
-    border: 'border-sky-500/40',
+    color: 'text-sky-400',
+    dot: 'bg-sky-400',
   },
   LOW: {
     label: 'LOW',
-    badge: 'bg-slate-500/15 text-slate-300 border-slate-500/40',
+    color: 'text-slate-400',
     dot: 'bg-slate-400',
-    text: 'text-slate-400',
-    border: 'border-slate-500/40',
   },
 }
 
 export const STATUS_CONFIG = {
   OPEN: {
     label: 'OPEN',
-    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-    dot: 'bg-rose-400 animate-pulse',
+    color: 'text-rose-400',
+    dot: 'bg-rose-400',
   },
   PENDING_HUMAN_REVIEW: {
     label: 'PENDING REVIEW',
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-    dot: 'bg-amber-400 animate-pulse',
+    color: 'text-amber-400',
+    dot: 'bg-amber-400',
   },
   VERIFIED_FIXED: {
     label: 'VERIFIED FIXED',
-    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_-2px_rgba(16,185,129,0.3)]',
+    color: 'text-emerald-400',
     dot: 'bg-emerald-400',
   },
   STILL_VULNERABLE: {
     label: 'STILL VULNERABLE',
-    badge: 'bg-red-600/25 text-red-200 border-red-500/50 shadow-[0_0_12px_-2px_rgba(239,68,68,0.4)]',
-    dot: 'bg-red-500 animate-ping',
+    color: 'text-red-400',
+    dot: 'bg-red-400',
   },
   REJECTED: {
     label: 'REJECTED',
-    badge: 'bg-slate-600/20 text-slate-400 border-slate-600/40',
-    dot: 'bg-slate-500',
+    color: 'text-slate-400',
+    dot: 'bg-slate-400',
   },
 }
 
 export const CLASSIFICATION_CONFIG = {
   Active: {
-    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30 shadow-[0_0_10px_-2px_rgba(16,185,129,0.25)]',
+    color: 'text-emerald-400',
     dot: 'bg-emerald-400',
     tag: 'ACTIVE ASSET',
   },
   Zombie: {
-    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30 shadow-[0_0_10px_-2px_rgba(245,158,11,0.25)]',
+    color: 'text-amber-400',
     dot: 'bg-amber-400',
     tag: 'ZOMBIE (DEPRECATED)',
   },
   Shadow: {
-    badge: 'bg-purple-500/15 text-purple-300 border-purple-500/30 shadow-[0_0_10px_-2px_rgba(168,85,247,0.3)]',
-    dot: 'bg-purple-400',
+    color: 'text-rose-400',
+    dot: 'bg-rose-400',
     tag: 'SHADOW (UNMANAGED)',
   },
 }

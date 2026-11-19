@@ -82,7 +82,7 @@ export function InventoryView({
           label="Shadow Endpoints"
           value={inventory.shadow_count || 0}
           sub="Undocumented / Active"
-          tone="violet"
+          tone="slate"
           badgeText="Action: Restrict"
         />
         <MetricCard
@@ -95,7 +95,7 @@ export function InventoryView({
       </section>
 
       {/* Search and Filters Toolbar */}
-      <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4 backdrop-blur-xl shadow-lg space-y-3">
+      <div className="rounded-2xl bg-slate-950/70 p-4 backdrop-blur-xl shadow-lg space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="relative min-w-[260px] flex-1">
             <input
@@ -103,7 +103,7 @@ export function InventoryView({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search catalog by endpoint route, HTTP method, or engineering owner..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none"
+              className="w-full rounded-xl bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none"
             />
             {searchQuery && (
               <button
@@ -119,7 +119,7 @@ export function InventoryView({
             <select
               value={filterAuth}
               onChange={(e) => setFilterAuth(e.target.value)}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
             >
               <option value="ALL">All Auth States</option>
               <option value="UNAUTH">Unauthenticated Only</option>
@@ -129,7 +129,7 @@ export function InventoryView({
             <select
               value={filterPII}
               onChange={(e) => setFilterPII(e.target.value)}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
             >
               <option value="ALL">All PII Exposures</option>
               <option value="PII">Exposes PII</option>
@@ -138,9 +138,9 @@ export function InventoryView({
           </div>
         </div>
 
-        {/* Classification Filter Pills */}
-        <div className="flex items-center gap-2 border-t border-slate-800/80 pt-3">
-          <span className="font-mono text-[10px] uppercase text-slate-500 mr-1">CLASSIFICATION:</span>
+        {/* Classification Filter Bar */}
+        <div className="flex items-center gap-2 border-t border-slate-800/50 pt-3">
+          <span className="text-xs text-slate-400 mr-2 font-medium">Classification:</span>
           {['ALL', 'Active', 'Zombie', 'Shadow'].map((cls) => {
             const count = cls === 'ALL'
               ? entries.length
@@ -151,7 +151,7 @@ export function InventoryView({
                 onClick={() => setFilterClass(cls)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                   filterClass === cls
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
+                    ? 'bg-slate-800 text-cyan-300'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -207,25 +207,25 @@ export function InventoryView({
 
               <td className="py-3 px-3 whitespace-nowrap">
                 {entry.reachable_without_auth === null ? (
-                  <span className="text-slate-500 font-mono">—</span>
+                  <span className="text-slate-500 font-mono">None</span>
                 ) : entry.reachable_without_auth ? (
-                  <span className="rounded bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-bold text-rose-300 border border-rose-500/30">
+                  <span className="font-mono text-xs font-bold text-rose-400">
                     EXPOSED
                   </span>
                 ) : (
-                  <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-300">
-                    AUTH REQUIRED
+                  <span className="font-mono text-xs text-slate-400">
+                    Auth Required
                   </span>
                 )}
               </td>
 
               <td className="py-3 px-3 whitespace-nowrap">
                 {entry.pii_exposed?.length ? (
-                  <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-mono text-amber-300 border border-amber-500/30">
+                  <span className="font-mono text-xs text-amber-300">
                     {entry.pii_exposed.join(', ')}
                   </span>
                 ) : (
-                  <span className="text-slate-500 font-mono">—</span>
+                  <span className="text-slate-500 font-mono">None</span>
                 )}
               </td>
 
@@ -234,7 +234,7 @@ export function InventoryView({
               </td>
 
               <td className="py-3 px-3 text-slate-300 max-w-xs truncate font-sans text-xs">
-                {entry.security_regression || '—'}
+                {entry.security_regression || 'None'}
               </td>
 
               <td className="py-3 px-3 text-slate-300 font-mono text-[10px] whitespace-nowrap">
@@ -244,18 +244,18 @@ export function InventoryView({
               <td className="py-3 px-3 whitespace-nowrap">
                 {entry.recommendation ? (
                   <span
-                    className={`rounded px-2 py-0.5 text-[10px] font-bold border ${
+                    className={`font-mono text-xs font-semibold ${
                       entry.recommendation === 'DECOMMISSION'
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                        ? 'text-rose-400'
                         : entry.recommendation === 'RESTRICT'
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                        ? 'text-amber-400'
+                        : 'text-cyan-400'
                     }`}
                   >
                     {entry.recommendation}
                   </span>
                 ) : (
-                  <span className="text-slate-500">—</span>
+                  <span className="text-slate-500">None</span>
                 )}
               </td>
             </tr>
@@ -276,7 +276,7 @@ export function InventoryView({
               </div>
               <button
                 onClick={() => setSelectedEntry(null)}
-                className="rounded-lg border border-slate-800 p-1 text-slate-400 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:text-white"
               >
                 <IconX className="h-4 w-4" />
               </button>
@@ -284,18 +284,18 @@ export function InventoryView({
 
             <div className="space-y-3 text-xs font-mono">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-                  <span className="text-slate-500 text-[10px] block">90-DAY TRAFFIC VOLUME</span>
+                <div className="rounded-lg bg-slate-950 p-3">
+                  <span className="text-slate-400 text-xs block mb-1 font-sans">90-Day Traffic Volume</span>
                   <span className="text-cyan-300 font-bold text-sm">{selectedEntry.hit_count_90d} requests</span>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
-                  <span className="text-slate-500 text-[10px] block">DISCOVERY SOURCE</span>
+                <div className="rounded-lg bg-slate-950 p-3">
+                  <span className="text-slate-400 text-xs block mb-1 font-sans">Discovery Source</span>
                   <span className="text-white font-bold">{getDiscoverySource(selectedEntry)}</span>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-slate-800 bg-slate-950 p-3 space-y-2">
-                <span className="text-slate-500 text-[10px] block">SECURITY AUDIT ANALYSIS</span>
+              <div className="rounded-lg bg-slate-950 p-3 space-y-2">
+                <span className="text-slate-400 text-xs block font-sans">Security Audit Analysis</span>
                 <p className="font-sans text-slate-300 leading-relaxed">
                   {selectedEntry.security_regression || 'Clean asset status. No active security regressions identified.'}
                 </p>
@@ -307,9 +307,9 @@ export function InventoryView({
               </div>
 
               <div className="flex justify-between items-center pt-2">
-                <span className="text-slate-400">Owner: {selectedEntry.likely_owner}</span>
+                <span className="text-slate-400 font-sans">Owner: {selectedEntry.likely_owner}</span>
                 {selectedEntry.recommendation && (
-                  <span className="rounded bg-rose-500/20 px-2.5 py-1 text-xs font-bold text-rose-300 border border-rose-500/40">
+                  <span className="font-mono text-xs font-bold text-rose-400">
                     Recommended Action: {selectedEntry.recommendation}
                   </span>
                 )}

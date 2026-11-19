@@ -19,7 +19,7 @@ export function HITLModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-500/30 bg-rose-500/15 text-rose-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/15 text-rose-400">
               <IconShieldAlert className="h-5 w-5" />
             </div>
             <div>
@@ -31,7 +31,7 @@ export function HITLModal({
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg border border-slate-800 p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition"
           >
             <IconX className="h-4 w-4" />
           </button>
@@ -40,14 +40,14 @@ export function HITLModal({
         {/* List */}
         <div className="mt-4 max-h-[420px] space-y-3 overflow-y-auto pr-1">
           {items.length === 0 ? (
-            <div className="rounded-xl border border-slate-800/80 bg-slate-950/40 p-8 text-center text-xs text-slate-400">
+            <div className="rounded-xl bg-slate-950/40 p-8 text-center text-xs text-slate-400">
               No HITL authorization items queued. All automated operations within safe bounds.
             </div>
           ) : (
             items.map((item) => (
               <div
                 key={item.approval_id}
-                className="rounded-xl border border-slate-800/80 bg-slate-950/70 p-4 text-xs transition"
+                className="rounded-xl bg-slate-950/70 p-4 text-xs transition"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -57,12 +57,12 @@ export function HITLModal({
                     <SeverityBadge severity={item.risk_level || 'HIGH'} size="xs" />
                   </div>
                   <span
-                    className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold ${
+                    className={`font-mono text-xs font-semibold ${
                       item.decision === 'PENDING'
-                        ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                        ? 'text-amber-400'
                         : item.decision === 'APPROVED'
-                        ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
+                        ? 'text-emerald-400'
+                        : 'text-rose-400'
                     }`}
                   >
                     {item.decision}
@@ -89,7 +89,7 @@ export function HITLModal({
                     <button
                       disabled={Boolean(busyAction)}
                       onClick={() => onDecide(item.approval_id, false)}
-                      className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 transition"
                     >
                       <IconX className="h-3.5 w-3.5" />
                       <span>Reject & Block</span>

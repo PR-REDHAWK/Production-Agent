@@ -35,7 +35,7 @@ export function AuditLogsView({
                 onClick={() => setFilterDecision(dec)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-mono font-semibold transition ${
                   filterDecision === dec
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_-2px_rgba(6,182,212,0.3)]'
+                    ? 'bg-slate-800 text-cyan-300'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -75,19 +75,13 @@ export function AuditLogsView({
                 className="hover:bg-slate-900/60 transition font-mono text-[11px]"
               >
                 <td className="py-3 px-3 whitespace-nowrap">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-bold border ${
-                      isAllowed
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                        : 'bg-rose-500/15 text-rose-300 border-rose-500/30 shadow-[0_0_8px_rgba(244,63,94,0.25)]'
-                    }`}
-                  >
+                  <span className={`inline-flex items-center gap-1.5 font-mono text-xs font-semibold ${isAllowed ? 'text-emerald-400' : 'text-rose-400'}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${isAllowed ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                     {isAllowed ? 'ALLOWED' : 'BLOCKED'}
                   </span>
                 </td>
                 <td className="py-3 px-3 text-slate-300">
-                  <span className="rounded bg-slate-800/80 px-1.5 py-0.5 text-[10px] border border-slate-700/60 text-slate-200">
+                  <span className="font-mono text-xs text-slate-300">
                     {rec.actor}
                   </span>
                 </td>

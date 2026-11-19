@@ -11,13 +11,13 @@ export function PipelineCanvas({
   const getAgent = (id) => agentsMap[id] || { id, name: id, status: 'IDLE' }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/80 p-6 backdrop-blur-xl shadow-2xl">
+    <div className="relative overflow-hidden rounded-2xl bg-slate-950/80 p-6 backdrop-blur-xl shadow-2xl">
       {/* Background Cyber Grid */}
       <div className="bg-cyber-grid pointer-events-none absolute inset-0 opacity-40" />
 
       {/* Decorative Radial Cyber Glows */}
       <div className="pointer-events-none absolute -left-20 top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-1/2 h-80 w-80 rounded-full bg-purple-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute right-0 top-1/2 h-80 w-80 rounded-full bg-cyan-500/5 blur-3xl" />
       <div className="pointer-events-none absolute left-1/3 bottom-10 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
 
       <div className="relative z-10 flex flex-col items-center space-y-6">
@@ -83,10 +83,8 @@ export function PipelineCanvas({
 
         {/* Stage 6: Specialized Attack Executors (5 Branching Nodes) */}
         <div className="w-full">
-          <div className="mb-2 text-center">
-            <span className="font-mono text-[10px] font-bold tracking-widest text-slate-500 uppercase">
-              PARALLEL EXECUTION MATRIX (SEMAPHORE=4)
-            </span>
+          <div className="mb-2 text-center text-xs text-slate-400 font-mono">
+            Parallel Execution Matrix (Semaphore: 4)
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <AgentNode

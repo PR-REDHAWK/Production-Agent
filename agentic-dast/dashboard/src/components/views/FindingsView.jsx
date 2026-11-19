@@ -87,7 +87,7 @@ export function FindingsView({
   return (
     <div className="space-y-6">
       {/* Search & Filter Toolbar */}
-      <div className="rounded-2xl border border-slate-800/80 bg-slate-950/70 p-4 backdrop-blur-xl shadow-lg space-y-3.5">
+      <div className="rounded-2xl bg-slate-950/70 p-4 backdrop-blur-xl shadow-lg space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Live Search */}
           <div className="relative min-w-[260px] flex-1">
@@ -96,7 +96,7 @@ export function FindingsView({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search findings by endpoint, title, parameter, class, or owner team..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+              className="w-full rounded-xl bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
             />
             {searchQuery && (
               <button
@@ -109,11 +109,11 @@ export function FindingsView({
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center rounded-xl border border-slate-800 bg-slate-900 p-1">
+          <div className="flex items-center rounded-xl bg-slate-900 p-1">
             <button
               onClick={() => setViewMode('table')}
               className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                viewMode === 'table' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
+                viewMode === 'table' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
               }`}
             >
               Table View
@@ -121,7 +121,7 @@ export function FindingsView({
             <button
               onClick={() => setViewMode('split')}
               className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                viewMode === 'split' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-white'
+                viewMode === 'split' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
               }`}
             >
               Master-Detail Split
@@ -129,11 +129,11 @@ export function FindingsView({
           </div>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-3">
-          {/* Severity Pills */}
+        {/* Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/50 pt-3">
+          {/* Severity Filter */}
           <div className="flex items-center gap-1.5 overflow-x-auto py-0.5">
-            <span className="text-[11px] font-mono text-slate-500 mr-1 uppercase">SEVERITY:</span>
+            <span className="text-xs text-slate-400 mr-2 font-medium">Severity:</span>
             {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((sev) => {
               const count = sev === 'ALL'
                 ? tickets.length
@@ -144,7 +144,7 @@ export function FindingsView({
                   onClick={() => setSeverityFilter(sev)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                     severityFilter === sev
-                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_8px_rgba(6,182,212,0.3)]'
+                      ? 'bg-slate-800 text-cyan-300'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
@@ -159,7 +159,7 @@ export function FindingsView({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+              className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
             >
               <option value="ALL">All Statuses</option>
               <option value="OPEN">Open</option>
@@ -172,7 +172,7 @@ export function FindingsView({
               <select
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
-                className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
+                className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs text-slate-300 focus:outline-none"
               >
                 <option value="ALL">All Owner Teams</option>
                 {ownerTeams.map((team) => (
@@ -186,7 +186,7 @@ export function FindingsView({
                 setSortAsc(!sortAsc)
               }}
               title="Toggle sort direction"
-              className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-1 text-xs font-mono text-slate-400 hover:text-white"
+              className="rounded-lg bg-slate-900 px-2 py-1 text-xs font-mono text-slate-400 hover:text-white"
             >
               {sortAsc ? 'ASC ↑' : 'DESC ↓'}
             </button>
@@ -246,7 +246,7 @@ export function FindingsView({
                 </td>
 
                 <td className="py-3.5 px-3 font-mono text-cyan-300">
-                  {t.finding.affected_parameter || '—'}
+                  {t.finding.affected_parameter || 'None'}
                 </td>
 
                 <td className="py-3.5 px-3 whitespace-nowrap">
@@ -261,7 +261,7 @@ export function FindingsView({
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => setDetailModalTicket(t)}
-                      className="rounded-lg border border-slate-700 bg-slate-800/80 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-700 transition"
+                      className="rounded-lg bg-slate-800/80 px-2 py-1 text-[11px] text-slate-200 hover:bg-slate-700 transition"
                     >
                       Details
                     </button>
@@ -269,7 +269,7 @@ export function FindingsView({
                       disabled={Boolean(busyAction)}
                       onClick={() => onRetestTicket(t.ticket_id)}
                       title="Retest exploit PoC"
-                      className="rounded-lg border border-cyan-500/40 bg-cyan-500/15 p-1 text-cyan-300 hover:bg-cyan-500/25 transition disabled:opacity-50"
+                      className="rounded-lg bg-cyan-500/15 p-1 text-cyan-300 hover:bg-cyan-500/25 transition disabled:opacity-50"
                     >
                       <IconRefresh className="w-3.5 h-3.5" />
                     </button>
@@ -292,10 +292,10 @@ export function FindingsView({
                 <button
                   key={t.ticket_id}
                   onClick={() => onSelectTicket(t.ticket_id)}
-                  className={`w-full rounded-xl border p-4 text-left transition-all ${
+                  className={`w-full rounded-xl p-4 text-left transition-all ${
                     isSelected
-                      ? 'border-cyan-500/50 bg-slate-900/90 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)] ring-1 ring-cyan-500/30'
-                      : 'border-slate-800/80 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/50'
+                      ? 'bg-slate-900/90 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)] ring-1 ring-cyan-500/30'
+                      : 'bg-slate-950/60 hover:bg-slate-900/50'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -331,14 +331,14 @@ export function FindingsView({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setDetailModalTicket(selectedTicket)}
-                      className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 transition"
+                      className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700 transition"
                     >
                       Full Details Modal &rarr;
                     </button>
                     <button
                       disabled={Boolean(busyAction)}
                       onClick={() => onRetestTicket(selectedTicket.ticket_id)}
-                      className="flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 transition"
                     >
                       <IconRefresh className="w-3.5 h-3.5" />
                       <span>Retest</span>
@@ -349,10 +349,10 @@ export function FindingsView({
                 <div className="space-y-4 text-xs font-sans">
                   {/* Business Impact */}
                   <div>
-                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    <h4 className="text-xs font-semibold text-slate-300 mb-1">
                       Business Impact Analysis
-                    </span>
-                    <p className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3.5 text-slate-200 leading-relaxed">
+                    </h4>
+                    <p className="rounded-xl bg-slate-950/60 p-3.5 text-slate-200 leading-relaxed">
                       {selectedTicket.business_impact}
                     </p>
                   </div>
@@ -360,9 +360,9 @@ export function FindingsView({
                   {/* Replayable cURL */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                        Replayable PoC (Credentials Redacted)
-                      </span>
+                      <h4 className="text-xs font-semibold text-slate-300">
+                        Replayable Proof of Concept
+                      </h4>
                       <button
                         onClick={() => handleCopy(selectedTicket.ticket_id, selectedTicket.finding.repro_curl)}
                         className="text-cyan-400 hover:text-cyan-300 text-[11px]"
@@ -370,24 +370,24 @@ export function FindingsView({
                         {copiedCurlId === selectedTicket.ticket_id ? 'Copied!' : 'Copy cURL'}
                       </button>
                     </div>
-                    <pre className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-3 font-mono text-[11px] text-emerald-300">
+                    <pre className="overflow-x-auto rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-300">
                       {selectedTicket.finding.repro_curl}
                     </pre>
                   </div>
 
                   {/* Remediation */}
                   <div>
-                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    <h4 className="text-xs font-semibold text-slate-300 mb-1">
                       Engineering Fix Recommendation
-                    </span>
-                    <p className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3 text-slate-200">
+                    </h4>
+                    <p className="rounded-xl bg-slate-950/60 p-3 text-slate-200">
                       {selectedTicket.code_fix_suggestion}
                     </p>
                   </div>
                 </div>
               </Panel>
             ) : (
-              <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-12 text-center text-xs text-slate-400">
+              <div className="rounded-xl bg-slate-950/40 p-12 text-center text-xs text-slate-400">
                 Select a finding to inspect its verified proof.
               </div>
             )}
