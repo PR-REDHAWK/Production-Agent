@@ -5,60 +5,66 @@ export function MetricCard({
   value,
   sub,
   icon,
-  tone = 'cyan',
+  tone = 'slate',
   badgeText = null,
 }) {
   const toneMap = {
     cyan: {
-      text: 'text-cyan-300',
-      iconBg: 'bg-cyan-500/10 text-cyan-400',
+      text: 'text-slate-100',
+      dot: 'bg-sky-400',
+      iconText: 'text-slate-400',
     },
     emerald: {
-      text: 'text-emerald-300',
-      iconBg: 'bg-emerald-500/10 text-emerald-400',
+      text: 'text-slate-100',
+      dot: 'bg-emerald-400',
+      iconText: 'text-slate-400',
     },
     amber: {
-      text: 'text-amber-300',
-      iconBg: 'bg-amber-500/10 text-amber-400',
+      text: 'text-slate-100',
+      dot: 'bg-amber-400',
+      iconText: 'text-slate-400',
     },
     rose: {
-      text: 'text-rose-300',
-      iconBg: 'bg-rose-500/10 text-rose-400',
+      text: 'text-slate-100',
+      dot: 'bg-rose-400',
+      iconText: 'text-slate-400',
     },
     slate: {
       text: 'text-slate-100',
-      iconBg: 'bg-slate-800/80 text-slate-300',
+      dot: 'bg-slate-400',
+      iconText: 'text-slate-400',
     },
   }
 
-  const selectedTone = toneMap[tone] || toneMap.cyan
+  const selectedTone = toneMap[tone] || toneMap.slate
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-slate-900/60 p-4 transition-colors hover:bg-slate-900/80">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-xs font-medium text-slate-300">
-          {label}
+        <div className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full ${selectedTone.dot}`} />
+          <span>{label}</span>
         </div>
         {icon && (
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selectedTone.iconBg}`}>
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-800/60 text-slate-400">
             {icon}
           </div>
         )}
       </div>
 
-      <div className="mt-2 flex items-baseline gap-2">
-        <div className={`text-2xl font-bold tracking-tight font-mono ${selectedTone.text}`}>
+      <div className="mt-2.5 flex items-baseline gap-2">
+        <div className="text-2xl font-semibold tracking-tight font-mono text-white">
           {value}
         </div>
         {badgeText && (
-          <span className="text-[11px] font-mono text-slate-400">
+          <span className="text-[11px] font-mono text-slate-500">
             ({badgeText})
           </span>
         )}
       </div>
 
       {sub && (
-        <div className="mt-1 text-xs text-slate-400">
+        <div className="mt-1 text-xs text-slate-500 font-sans">
           {sub}
         </div>
       )}

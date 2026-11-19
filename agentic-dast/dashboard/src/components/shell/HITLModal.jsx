@@ -51,7 +51,7 @@ export function HITLModal({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-semibold text-cyan-300">
+                    <span className="font-mono text-xs font-semibold text-slate-300">
                       {item.approval_id}
                     </span>
                     <SeverityBadge severity={item.risk_level || 'HIGH'} size="xs" />
@@ -81,7 +81,7 @@ export function HITLModal({
                     <button
                       disabled={Boolean(busyAction)}
                       onClick={() => onDecide(item.approval_id, true)}
-                      className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 shadow-[0_0_12px_-2px_rgba(16,185,129,0.3)] transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-500 transition"
                     >
                       <IconCheck className="h-3.5 w-3.5" />
                       <span>Approve Execution</span>
@@ -89,7 +89,7 @@ export function HITLModal({
                     <button
                       disabled={Boolean(busyAction)}
                       onClick={() => onDecide(item.approval_id, false)}
-                      className="flex items-center gap-1.5 rounded-lg bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/25 transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-medium text-rose-300 hover:bg-slate-700 transition"
                     >
                       <IconX className="h-3.5 w-3.5" />
                       <span>Reject & Block</span>

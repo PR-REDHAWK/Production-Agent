@@ -151,7 +151,7 @@ export function InventoryView({
                 onClick={() => setFilterClass(cls)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                   filterClass === cls
-                    ? 'bg-slate-800 text-cyan-300'
+                    ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -165,8 +165,8 @@ export function InventoryView({
       {/* Main Governance Catalog Table */}
       <Panel
         title={`API Governance Matrix (${filteredEntries.length})`}
-        subtitle="Cataloging active microservices, unmaintained zombie code paths and shadow exports"
-        icon={<IconDatabase className="w-4 h-4" />}
+        subtitle="Catalog of active microservices, unmaintained zombie code paths, and shadow exports."
+        icon={<IconDatabase className="w-4 h-4 text-slate-400" />}
         bodyClassName="p-0"
       >
         <Table
@@ -244,12 +244,12 @@ export function InventoryView({
               <td className="py-3 px-3 whitespace-nowrap">
                 {entry.recommendation ? (
                   <span
-                    className={`font-mono text-xs font-semibold ${
+                    className={`font-mono text-xs font-medium ${
                       entry.recommendation === 'DECOMMISSION'
                         ? 'text-rose-400'
                         : entry.recommendation === 'RESTRICT'
                         ? 'text-amber-400'
-                        : 'text-cyan-400'
+                        : 'text-slate-300'
                     }`}
                   >
                     {entry.recommendation}
@@ -266,7 +266,7 @@ export function InventoryView({
       {/* Entry Detail Drawer Modal */}
       {selectedEntry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="cyber-glass w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl space-y-4">
+          <div className="cyber-glass w-full max-w-xl rounded-2xl bg-slate-900 p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <ClassificationBadge classification={selectedEntry.classification} />
@@ -286,7 +286,7 @@ export function InventoryView({
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-slate-950 p-3">
                   <span className="text-slate-400 text-xs block mb-1 font-sans">90-Day Traffic Volume</span>
-                  <span className="text-cyan-300 font-bold text-sm">{selectedEntry.hit_count_90d} requests</span>
+                  <span className="text-white font-semibold text-sm">{selectedEntry.hit_count_90d} requests</span>
                 </div>
                 <div className="rounded-lg bg-slate-950 p-3">
                   <span className="text-slate-400 text-xs block mb-1 font-sans">Discovery Source</span>
@@ -300,7 +300,7 @@ export function InventoryView({
                   {selectedEntry.security_regression || 'Clean asset status. No active security regressions identified.'}
                 </p>
                 {selectedEntry.pii_exposed?.length > 0 && (
-                  <div className="text-amber-300 font-bold">
+                  <div className="text-amber-400 font-medium">
                     Sensitive PII Fields Exposed: {selectedEntry.pii_exposed.join(', ')}
                   </div>
                 )}
@@ -309,7 +309,7 @@ export function InventoryView({
               <div className="flex justify-between items-center pt-2">
                 <span className="text-slate-400 font-sans">Owner: {selectedEntry.likely_owner}</span>
                 {selectedEntry.recommendation && (
-                  <span className="font-mono text-xs font-bold text-rose-400">
+                  <span className="font-mono text-xs font-semibold text-rose-400">
                     Recommended Action: {selectedEntry.recommendation}
                   </span>
                 )}

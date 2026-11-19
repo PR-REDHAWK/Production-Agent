@@ -13,12 +13,7 @@ export function PipelineCanvas({
   return (
     <div className="relative overflow-hidden rounded-2xl bg-slate-950/80 p-6 backdrop-blur-xl shadow-2xl">
       {/* Background Cyber Grid */}
-      <div className="bg-cyber-grid pointer-events-none absolute inset-0 opacity-40" />
-
-      {/* Decorative Radial Cyber Glows */}
-      <div className="pointer-events-none absolute -left-20 top-20 h-72 w-72 rounded-full bg-cyan-500/10 blur-3xl" />
-      <div className="pointer-events-none absolute right-0 top-1/2 h-80 w-80 rounded-full bg-cyan-500/5 blur-3xl" />
-      <div className="pointer-events-none absolute left-1/3 bottom-10 h-72 w-72 rounded-full bg-emerald-500/10 blur-3xl" />
+      <div className="bg-cyber-grid pointer-events-none absolute inset-0 opacity-20" />
 
       <div className="relative z-10 flex flex-col items-center space-y-6">
         {/* Stage 1: Change Detection Agent */}

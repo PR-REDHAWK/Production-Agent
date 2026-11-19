@@ -8,34 +8,19 @@ import React from 'react'
 export function RobotBase({
   children,
   size = 48,
-  glowColor = '#06b6d4',
+  glowColor = '#64748b',
   status = 'IDLE',
   className = '',
 }) {
   const isRunning = status === 'RUNNING'
-  const isBlocked = status === 'BLOCKED' || status === 'FAILED'
-  const isWaiting = status === 'WAITING_FOR_APPROVAL'
-
-  const statusGlow = isRunning
-    ? 'rgba(6, 182, 212, 0.5)'
-    : isBlocked
-    ? 'rgba(244, 63, 94, 0.6)'
-    : isWaiting
-    ? 'rgba(245, 158, 11, 0.5)'
-    : glowColor
 
   return (
     <div
-      className={`relative flex items-center justify-center shrink-0 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 p-2 border border-slate-700/60 shadow-lg ${
-        isRunning ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 shadow-[0_0_20px_rgba(6,182,212,0.4)]' : ''
+      className={`relative flex items-center justify-center shrink-0 rounded-xl bg-slate-900/90 p-1.5 border border-slate-800 ${
+        isRunning ? 'ring-1 ring-sky-400' : ''
       } ${className}`}
       style={{ width: size, height: size }}
     >
-      {/* Background glow disc */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-2xl opacity-20 blur-md transition-all duration-300"
-        style={{ background: statusGlow }}
-      />
       <svg
         viewBox="0 0 64 64"
         fill="none"
@@ -144,26 +129,26 @@ export function RobotRecon({ status = 'IDLE', size = 48 }) {
 export function RobotInventory({ status = 'IDLE', size = 48 }) {
   const isRunning = status === 'RUNNING'
   return (
-    <RobotBase size={size} status={status} glowColor="rgba(168, 85, 247, 0.4)">
+    <RobotBase size={size} status={status}>
       {/* Database Tier Crown */}
-      <ellipse cx="32" cy="14" rx="14" ry="4" fill="#6b21a8" stroke="#a855f7" strokeWidth="1.5" />
-      <path d="M18 14 v4 c0 2.2 6.3 4 14 4 s14 -1.8 14 -4 v-4" fill="none" stroke="#a855f7" strokeWidth="1.5" />
+      <ellipse cx="32" cy="14" rx="14" ry="4" fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
+      <path d="M18 14 v4 c0 2.2 6.3 4 14 4 s14 -1.8 14 -4 v-4" fill="none" stroke="#64748b" strokeWidth="1.5" />
 
       {/* Head Chassis */}
       <rect x="16" y="22" width="32" height="28" rx="6" fill="url(#metalGrad)" stroke="#475569" strokeWidth="2" />
 
       {/* Catalog Matrix Visor */}
-      <rect x="20" y="27" width="24" height="12" rx="3" fill="#0b0f19" stroke="#a855f7" strokeWidth="1.5" />
+      <rect x="20" y="27" width="24" height="12" rx="3" fill="#0b0f19" stroke="#64748b" strokeWidth="1.5" />
       {/* Data blocks */}
-      <rect x="23" y="30" width="4" height="2.5" rx="0.5" fill="#c084fc" />
-      <rect x="29" y="30" width="4" height="2.5" rx="0.5" fill="#c084fc" />
-      <rect x="35" y="30" width="4" height="2.5" rx="0.5" fill={isRunning ? '#22d3ee' : '#c084fc'} />
-      <rect x="23" y="34.5" width="4" height="2.5" rx="0.5" fill="#c084fc" />
-      <rect x="29" y="34.5" width="4" height="2.5" rx="0.5" fill="#c084fc" />
-      <rect x="35" y="34.5" width="4" height="2.5" rx="0.5" fill="#c084fc" />
+      <rect x="23" y="30" width="4" height="2.5" rx="0.5" fill="#94a3b8" />
+      <rect x="29" y="30" width="4" height="2.5" rx="0.5" fill="#94a3b8" />
+      <rect x="35" y="30" width="4" height="2.5" rx="0.5" fill={isRunning ? '#38bdf8' : '#94a3b8'} />
+      <rect x="23" y="34.5" width="4" height="2.5" rx="0.5" fill="#94a3b8" />
+      <rect x="29" y="34.5" width="4" height="2.5" rx="0.5" fill="#94a3b8" />
+      <rect x="35" y="34.5" width="4" height="2.5" rx="0.5" fill="#94a3b8" />
 
       {/* Storage Level LED */}
-      <line x1="22" y1="44" x2="42" y2="44" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" />
+      <line x1="22" y1="44" x2="42" y2="44" stroke="#64748b" strokeWidth="2" strokeLinecap="round" />
     </RobotBase>
   )
 }
@@ -172,22 +157,22 @@ export function RobotInventory({ status = 'IDLE', size = 48 }) {
 export function RobotPlanner({ status = 'IDLE', size = 48 }) {
   const isRunning = status === 'RUNNING'
   return (
-    <RobotBase size={size} status={status} glowColor="rgba(245, 158, 11, 0.4)">
+    <RobotBase size={size} status={status}>
       {/* Translucent Neural Dome */}
-      <path d="M20 22 C20 12, 44 12, 44 22 Z" fill="#1e1b4b" stroke="#818cf8" strokeWidth="1.5" />
-      <circle cx="28" cy="17" r="1.5" fill="#f59e0b" className={isRunning ? 'animate-ping' : ''} />
-      <circle cx="36" cy="17" r="1.5" fill="#f59e0b" />
-      <line x1="28" y1="17" x2="36" y2="17" stroke="#f59e0b" strokeWidth="1" strokeDasharray="1 1" />
+      <path d="M20 22 C20 12, 44 12, 44 22 Z" fill="#1e293b" stroke="#64748b" strokeWidth="1.5" />
+      <circle cx="28" cy="17" r="1.5" fill="#94a3b8" />
+      <circle cx="36" cy="17" r="1.5" fill="#94a3b8" />
+      <line x1="28" y1="17" x2="36" y2="17" stroke="#64748b" strokeWidth="1" strokeDasharray="1 1" />
 
       {/* Chassis */}
       <rect x="15" y="22" width="34" height="28" rx="7" fill="url(#metalGrad)" stroke="#475569" strokeWidth="2" />
 
       {/* Tactical Angular Visor */}
-      <polygon points="19,29 45,29 41,37 23,37" fill="#090d16" stroke="#f59e0b" strokeWidth="1.5" />
-      <line x1="23" y1="33" x2="41" y2="33" stroke="url(#amberVisor)" strokeWidth="2.5" strokeLinecap="round" />
+      <polygon points="19,29 45,29 41,37 23,37" fill="#090d16" stroke="#64748b" strokeWidth="1.5" />
+      <line x1="23" y1="33" x2="41" y2="33" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
 
       {/* Threat Logic Processor */}
-      <rect x="24" y="42" width="16" height="3" rx="1.5" fill="#f59e0b" opacity="0.8" />
+      <rect x="24" y="42" width="16" height="3" rx="1.5" fill="#64748b" opacity="0.8" />
     </RobotBase>
   )
 }

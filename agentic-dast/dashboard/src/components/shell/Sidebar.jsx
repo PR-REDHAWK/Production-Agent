@@ -21,23 +21,20 @@ export function Sidebar({
       {/* Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-slate-800/80 px-4">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_-2px_rgba(6,182,212,0.3)]">
-            <IconShield className="h-5 w-5 text-cyan-400" />
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-cyan-500" />
-            </span>
+          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-200">
+            <IconShield className="h-4 w-4 text-slate-200" />
+            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400" />
           </div>
 
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <span className="font-bold tracking-tight text-white text-sm">ANTIGRAVITY</span>
-                <span className="text-[10px] font-mono font-bold text-cyan-300">
+                <span className="text-[10px] font-mono font-bold text-slate-400">
                   DAST
                 </span>
               </div>
-              <div className="text-[10px] font-medium text-slate-400 truncate">
+              <div className="text-[10px] font-medium text-slate-500 truncate">
                 Real-Time API Shield
               </div>
             </div>
@@ -74,12 +71,12 @@ export function Sidebar({
             >
               {/* Active left indicator bar */}
               {isActive && (
-                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-slate-300" />
               )}
 
               <div
                 className={`flex shrink-0 items-center justify-center transition-colors ${
-                  isActive ? 'text-cyan-400' : 'text-slate-400 group-hover:text-slate-200'
+                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
                 }`}
               >
                 {getNavIcon(item.icon, 'w-4 h-4')}
@@ -117,11 +114,11 @@ export function Sidebar({
         ) : (
           <div className="rounded-xl bg-slate-900/50 p-2.5">
             <div className="flex items-center justify-between text-xs text-slate-400 font-sans">
-              <span className="font-medium text-slate-300">Rate Budget</span>
-              <span className="font-mono text-cyan-300 font-semibold">{rl.global_rps ?? 8} RPS</span>
+              <span className="font-medium text-slate-400">Rate Budget</span>
+              <span className="font-mono text-slate-200 font-semibold">{rl.global_rps ?? 8} RPS</span>
             </div>
             <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-slate-800">
-              <div className="h-full w-2/3 rounded bg-gradient-to-r from-cyan-500 to-emerald-400" />
+              <div className="h-full w-2/3 rounded bg-slate-400" />
             </div>
             <div className="mt-2 flex items-center justify-between text-xs text-slate-400 font-sans">
               <span className="font-medium text-slate-400">Safety Gateway</span>

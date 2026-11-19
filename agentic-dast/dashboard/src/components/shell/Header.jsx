@@ -37,14 +37,14 @@ export function Header({
           </div>
         </div>
 
-        {/* Right: Quick Action Center */}
+        {/* Right: Action Center */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Reset v1.0 Baseline */}
           <button
             disabled={Boolean(busyAction)}
             onClick={onDeployV10}
             title="Reset target to clean baseline v1.0"
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/60 px-2.5 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50 transition"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition"
           >
             <span>Reset v1.0</span>
           </button>
@@ -53,7 +53,7 @@ export function Header({
           <button
             disabled={Boolean(busyAction)}
             onClick={onRunScan}
-            className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-600 to-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)] hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-50 transition"
+            className="flex items-center gap-2 rounded-lg bg-sky-600 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50 transition"
           >
             <IconPlay className="h-3.5 w-3.5" />
             <span>Run Full Scan</span>
@@ -63,8 +63,9 @@ export function Header({
           <button
             disabled={Boolean(busyAction)}
             onClick={onDeployV11}
-            className="flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/25 disabled:opacity-50 transition shadow-[0_0_12px_-2px_rgba(245,158,11,0.25)]"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition"
           >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
             <span>Deploy v1.1 (Vuln)</span>
           </button>
 
@@ -72,9 +73,9 @@ export function Header({
           <button
             disabled={Boolean(busyAction)}
             onClick={onDeployV12}
-            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-50 transition shadow-[0_0_12px_-2px_rgba(16,185,129,0.25)]"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition"
           >
-            <IconRefresh className="h-3 w-3" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             <span>Deploy v1.2 (Fix & Retest)</span>
           </button>
 
@@ -82,7 +83,7 @@ export function Header({
           <a
             href={dastApi.getOpenApiUrl()}
             download="inferred-openapi-3.1.json"
-            className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/80 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 transition"
+            className="hidden md:flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition"
           >
             <IconDownload className="h-3.5 w-3.5 text-slate-400" />
             <span>OpenAPI 3.1</span>
@@ -91,12 +92,12 @@ export function Header({
           {/* HITL Queue Button */}
           <button
             onClick={onOpenHitl}
-            className="flex items-center gap-1.5 rounded-lg bg-rose-950/40 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition"
           >
-            <IconShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+            <IconShieldAlert className="h-3.5 w-3.5 text-slate-400" />
             <span>HITL Queue</span>
             {pendingHitlCount > 0 && (
-              <span className="font-mono text-xs font-bold text-rose-400">
+              <span className="font-mono text-xs font-semibold text-rose-400">
                 ({pendingHitlCount})
               </span>
             )}
@@ -106,10 +107,9 @@ export function Header({
 
       {/* Busy Action Banner */}
       {busyAction && (
-        <div className="flex items-center gap-2 border-t border-cyan-500/30 bg-cyan-950/40 px-6 py-2 text-xs text-cyan-200">
+        <div className="flex items-center gap-2 border-t border-slate-800 bg-slate-900/95 px-6 py-2 text-xs text-slate-200">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-500" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-sky-400" />
           </span>
           <span className="font-mono">{busyAction}</span>
         </div>

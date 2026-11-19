@@ -35,7 +35,7 @@ export function AuditLogsView({
                 onClick={() => setFilterDecision(dec)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-mono font-semibold transition ${
                   filterDecision === dec
-                    ? 'bg-slate-800 text-cyan-300'
+                    ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >

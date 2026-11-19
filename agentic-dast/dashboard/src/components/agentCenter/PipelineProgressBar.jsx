@@ -19,7 +19,7 @@ export function PipelineProgressBar({
       <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Left: Overall Scan Progress Status */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-300">
             <IconActivity className="h-5 w-5" />
           </div>
           <div>
@@ -30,7 +30,7 @@ export function PipelineProgressBar({
               <span
                 className={`font-mono text-xs font-semibold ${
                   isScanning
-                    ? 'text-cyan-300 animate-pulse'
+                    ? 'text-sky-400'
                     : isPause
                     ? 'text-rose-400'
                     : 'text-emerald-400'
@@ -40,7 +40,7 @@ export function PipelineProgressBar({
               </span>
             </div>
             <div className="mt-0.5 text-xs text-slate-400 font-mono">
-              Active Stage: <span className="text-cyan-300 font-semibold">{currentStage}</span>
+              Active Stage: <span className="text-slate-200 font-medium">{currentStage}</span>
             </div>
           </div>
         </div>
@@ -48,14 +48,14 @@ export function PipelineProgressBar({
         {/* Center / Right: Progress Counter & Control Buttons */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="text-right mr-2 font-mono">
-            <span className="text-xs text-slate-400">CYCLE PROGRESS</span>
-            <div className="text-lg font-bold text-cyan-300">{pipelineProgress}%</div>
+            <span className="text-xs text-slate-500 font-sans block">Cycle Progress</span>
+            <div className="text-lg font-semibold text-white">{pipelineProgress}%</div>
           </div>
 
           <button
             disabled={isScanning || isPause}
             onClick={() => onRunScan()}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)] hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-50 transition"
+            className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50 transition"
           >
             <IconPlay className="h-3.5 w-3.5" />
             <span>Dispatch Full Cycle</span>
@@ -66,7 +66,7 @@ export function PipelineProgressBar({
       {/* Progress Bar */}
       <div className="mt-4 relative h-2 w-full overflow-hidden rounded bg-slate-900">
         <div
-          className="h-full rounded bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-500 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+          className="h-full rounded bg-sky-500 transition-all duration-500"
           style={{ width: `${Math.max(4, pipelineProgress)}%` }}
         />
       </div>

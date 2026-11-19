@@ -50,7 +50,7 @@ export function RetestingView({
       timestamp: 'Clean State',
       desc: 'Hardened production-ready baseline platform. Zero false positives verified by deterministic replay verifier.',
       status: 'BASELINE SECURE',
-      tone: 'cyan',
+      tone: 'slate',
     },
   ]
 
@@ -83,7 +83,7 @@ export function RetestingView({
           label="Verification Precision"
           value={tickets.length > 0 ? '100%' : '100%'}
           sub="Deterministic Code Oracles"
-          tone="cyan"
+          tone="slate"
           icon={<IconZap className="w-4 h-4" />}
         />
       </section>
@@ -93,7 +93,7 @@ export function RetestingView({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-              <IconRefresh className="h-4 w-4 text-cyan-400" />
+              <IconRefresh className="h-4 w-4 text-slate-400" />
               <span>CI/CD Automated Closed-Loop Retest Engine</span>
             </h3>
             <p className="mt-1 text-xs text-slate-400">
@@ -111,14 +111,15 @@ export function RetestingView({
             <button
               disabled={Boolean(busyAction)}
               onClick={onDeployV11}
-              className="flex items-center gap-1.5 rounded-xl bg-amber-500/15 px-3.5 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-500/25 disabled:opacity-50 transition"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition"
             >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>Deploy v1.1 (Planted Flaws)</span>
             </button>
             <button
               disabled={Boolean(busyAction)}
               onClick={onDeployV12}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-xs font-bold text-white hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 transition shadow-[0_0_15px_-2px_rgba(16,185,129,0.4)]"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-50 transition"
             >
               <IconCheck className="w-3.5 h-3.5" />
               <span>Deploy v1.2 (Fix & Auto-Retest)</span>
@@ -138,12 +139,12 @@ export function RetestingView({
             <div key={rel.version} className="relative">
               {/* Timeline marker node */}
               <div
-                className={`absolute -left-6 top-1 h-3 w-3 rounded-full border-2 border-slate-950 ${
+                className={`absolute -left-6 top-1 h-2.5 w-2.5 rounded-full ${
                   rel.tone === 'emerald'
-                    ? 'bg-emerald-400 ring-2 ring-emerald-500/40 shadow-[0_0_8px_#10b981]'
+                    ? 'bg-emerald-400'
                     : rel.tone === 'amber'
-                    ? 'bg-amber-400 ring-2 ring-amber-500/40'
-                    : 'bg-cyan-400 ring-2 ring-cyan-500/40'
+                    ? 'bg-amber-400'
+                    : 'bg-slate-400'
                 }`}
               />
 
@@ -161,7 +162,7 @@ export function RetestingView({
                         ? 'text-emerald-400'
                         : rel.tone === 'amber'
                         ? 'text-amber-400'
-                        : 'text-cyan-400'
+                        : 'text-slate-300'
                     }`}
                   >
                     {rel.status}
@@ -178,7 +179,7 @@ export function RetestingView({
       <Panel
         title={`Vulnerability Retest Queue (${filteredTickets.length})`}
         subtitle="Individual PoC replay verification against active target environment"
-        icon={<IconRefresh className="w-4 h-4" />}
+        icon={<IconRefresh className="w-4 h-4 text-slate-400" />}
         actions={
           <div className="flex items-center gap-1.5">
             {['ALL', 'VERIFIED_FIXED', 'STILL_VULNERABLE', 'OPEN'].map((st) => (
@@ -187,7 +188,7 @@ export function RetestingView({
                 onClick={() => setFilterState(st)}
                 className={`rounded px-2.5 py-1 text-[11px] font-mono font-semibold transition ${
                   filterState === st
-                    ? 'bg-slate-800 text-cyan-300'
+                    ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -213,7 +214,7 @@ export function RetestingView({
         >
           {filteredTickets.map((t) => (
             <tr key={t.ticket_id} className="hover:bg-slate-900/60 transition font-mono text-xs">
-              <td className="py-3.5 px-3 text-cyan-300 font-bold whitespace-nowrap">
+              <td className="py-3.5 px-3 text-slate-200 font-semibold whitespace-nowrap">
                 {t.ticket_id}
               </td>
               <td className="py-3.5 px-3 font-sans text-white font-medium max-w-xs truncate">
@@ -238,9 +239,9 @@ export function RetestingView({
                 <button
                   disabled={Boolean(busyAction)}
                   onClick={() => onRetestTicket(t.ticket_id)}
-                  className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 transition"
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-50 transition"
                 >
-                  <IconRefresh className="w-3 h-3" />
+                  <IconRefresh className="w-3 h-3 text-slate-400" />
                   <span>Retest PoC</span>
                 </button>
               </td>

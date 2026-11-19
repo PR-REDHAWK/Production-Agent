@@ -96,7 +96,7 @@ export function FindingsView({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search findings by endpoint, title, parameter, class, or owner team..."
-              className="w-full rounded-xl bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500/40"
+              className="w-full rounded-xl bg-slate-900/80 px-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-700"
             />
             {searchQuery && (
               <button
@@ -113,7 +113,7 @@ export function FindingsView({
             <button
               onClick={() => setViewMode('table')}
               className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                viewMode === 'table' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
+                viewMode === 'table' ? 'bg-slate-800 text-slate-100 font-semibold' : 'text-slate-400 hover:text-white'
               }`}
             >
               Table View
@@ -121,7 +121,7 @@ export function FindingsView({
             <button
               onClick={() => setViewMode('split')}
               className={`rounded-lg px-3 py-1 text-xs font-medium transition ${
-                viewMode === 'split' ? 'bg-cyan-500/20 text-cyan-300' : 'text-slate-400 hover:text-white'
+                viewMode === 'split' ? 'bg-slate-800 text-slate-100 font-semibold' : 'text-slate-400 hover:text-white'
               }`}
             >
               Master-Detail Split
@@ -144,7 +144,7 @@ export function FindingsView({
                   onClick={() => setSeverityFilter(sev)}
                   className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                     severityFilter === sev
-                      ? 'bg-slate-800 text-cyan-300'
+                      ? 'bg-slate-800 text-slate-100'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
@@ -230,7 +230,7 @@ export function FindingsView({
                     {t.finding.title}
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-[10px] text-cyan-300">{t.ticket_id}</span>
+                    <span className="font-mono text-[10px] text-slate-400">{t.ticket_id}</span>
                     <span className="text-[10px] text-slate-500 font-sans">· {t.finding.vuln_class}</span>
                     <span className="text-[10px] text-slate-400 font-mono">
                       · {t.created_at ? new Date(t.created_at).toLocaleTimeString() : 'Live Cycle'}
@@ -245,7 +245,7 @@ export function FindingsView({
                   </div>
                 </td>
 
-                <td className="py-3.5 px-3 font-mono text-cyan-300">
+                <td className="py-3.5 px-3 font-mono text-slate-300">
                   {t.finding.affected_parameter || 'None'}
                 </td>
 
@@ -269,7 +269,7 @@ export function FindingsView({
                       disabled={Boolean(busyAction)}
                       onClick={() => onRetestTicket(t.ticket_id)}
                       title="Retest exploit PoC"
-                      className="rounded-lg bg-cyan-500/15 p-1 text-cyan-300 hover:bg-cyan-500/25 transition disabled:opacity-50"
+                      className="rounded-lg border border-slate-800 bg-slate-900/90 p-1.5 text-slate-300 hover:bg-slate-800 hover:text-white transition disabled:opacity-50"
                     >
                       <IconRefresh className="w-3.5 h-3.5" />
                     </button>
@@ -294,7 +294,7 @@ export function FindingsView({
                   onClick={() => onSelectTicket(t.ticket_id)}
                   className={`w-full rounded-xl p-4 text-left transition-all ${
                     isSelected
-                      ? 'bg-slate-900/90 shadow-[0_0_15px_-3px_rgba(6,182,212,0.2)] ring-1 ring-cyan-500/30'
+                      ? 'bg-slate-900 ring-1 ring-slate-700'
                       : 'bg-slate-950/60 hover:bg-slate-900/50'
                   }`}
                 >
@@ -338,7 +338,7 @@ export function FindingsView({
                     <button
                       disabled={Boolean(busyAction)}
                       onClick={() => onRetestTicket(selectedTicket.ticket_id)}
-                      className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 disabled:opacity-50 transition"
+                      className="flex items-center gap-1.5 rounded-lg bg-slate-800 border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700 disabled:opacity-50 transition"
                     >
                       <IconRefresh className="w-3.5 h-3.5" />
                       <span>Retest</span>
@@ -365,7 +365,7 @@ export function FindingsView({
                       </h4>
                       <button
                         onClick={() => handleCopy(selectedTicket.ticket_id, selectedTicket.finding.repro_curl)}
-                        className="text-cyan-400 hover:text-cyan-300 text-[11px]"
+                        className="text-slate-300 hover:text-white text-[11px] font-medium"
                       >
                         {copiedCurlId === selectedTicket.ticket_id ? 'Copied!' : 'Copy cURL'}
                       </button>

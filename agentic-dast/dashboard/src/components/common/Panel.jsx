@@ -18,7 +18,7 @@ export function Panel({
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/50 px-5 py-3.5">
           <div className="flex items-center gap-2.5">
             {icon && (
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800/80 text-slate-400">
                 {icon}
               </div>
             )}

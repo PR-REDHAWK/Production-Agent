@@ -68,7 +68,7 @@ export function AgentOperations({
         <div className="flex items-center justify-between px-1">
           <div>
             <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
-              <IconCpu className="h-5 w-5 text-cyan-400" />
+              <IconCpu className="h-5 w-5 text-slate-300" />
               <span>Interactive Agent Pipeline Matrix</span>
             </h2>
             <p className="text-xs text-slate-400">
@@ -77,15 +77,15 @@ export function AgentOperations({
           </div>
           <div className="hidden sm:flex items-center gap-3 font-mono text-[11px] text-slate-400">
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
               <span>Active Stage</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
               <span>Verified Node</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
               <span>HITL Gate</span>
             </span>
           </div>
@@ -119,7 +119,7 @@ export function AgentOperations({
                   type="checkbox"
                   checked={usePlaywright}
                   onChange={(e) => setUsePlaywright(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-sky-500"
                 />
               </div>
 
@@ -132,14 +132,14 @@ export function AgentOperations({
                   type="checkbox"
                   checked={deltaOnly}
                   onChange={(e) => setDeltaOnly(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-cyan-500 focus:ring-cyan-500"
+                  className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-sky-500"
                 />
               </div>
 
               <button
                 disabled={Boolean(busyAction)}
                 onClick={() => onRunScan({ usePlaywright, deltaOnly })}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 py-2.5 text-xs font-bold text-white shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)] hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-50 transition"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-600 py-2.5 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50 transition"
               >
                 <span>Dispatch Pipeline Cycle</span>
               </button>
@@ -147,9 +147,9 @@ export function AgentOperations({
               <button
                 disabled={Boolean(busyAction)}
                 onClick={onPollWatchers}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900/80 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50 transition border border-slate-800"
               >
-                <IconSparkles className="h-3.5 w-3.5 text-cyan-400" />
+                <IconSparkles className="h-3.5 w-3.5 text-slate-400" />
                 <span>Poll Drift Watchers (Hash / DNS)</span>
               </button>
             </div>
@@ -170,7 +170,7 @@ export function AgentOperations({
                     onClick={() => setFilterStage(tab)}
                     className={`rounded px-2 py-1 text-[10px] font-mono font-medium transition ${
                       filterStage === tab
-                        ? 'bg-slate-800 text-cyan-300 font-semibold'
+                        ? 'bg-slate-800 text-slate-100 font-semibold'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
@@ -193,7 +193,7 @@ export function AgentOperations({
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-cyan-300">
+                        <span className="font-mono text-xs font-bold text-slate-300">
                           {ev.stage}
                         </span>
                       </div>

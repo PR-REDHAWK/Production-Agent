@@ -239,7 +239,7 @@ export function CommandCenter({
               <button
                 disabled={demoStage.actionDisabled}
                 onClick={demoStage.actionFn}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 px-4 py-2 text-xs font-bold text-white shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)] hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-50 transition"
+                className="flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-xs font-medium text-white hover:bg-sky-500 disabled:opacity-50 transition"
               >
                 <span>{demoStage.actionLabel}</span>
               </button>
@@ -249,16 +249,16 @@ export function CommandCenter({
 
         {/* 4-Step Visual Progress Track */}
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800/50 text-xs font-mono">
-          <div className={`text-center py-1 ${demoStage.step >= 1 ? 'text-cyan-300 font-semibold' : 'text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 1 ? 'text-slate-100 font-semibold' : 'text-slate-500'}`}>
             1. Baseline (v1.0)
           </div>
-          <div className={`text-center py-1 ${demoStage.step >= 2 ? 'text-amber-300 font-semibold' : 'text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 2 ? 'text-slate-100 font-semibold' : 'text-slate-500'}`}>
             2. Planted Flaws (v1.1)
           </div>
-          <div className={`text-center py-1 ${demoStage.step >= 3 ? 'text-rose-300 font-semibold' : 'text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 3 ? 'text-slate-100 font-semibold' : 'text-slate-500'}`}>
             3. DAST Detection and Triage
           </div>
-          <div className={`text-center py-1 ${demoStage.step >= 4 ? 'text-emerald-300 font-semibold' : 'text-slate-500'}`}>
+          <div className={`text-center py-1 ${demoStage.step >= 4 ? 'text-slate-100 font-semibold' : 'text-slate-500'}`}>
             4. Closed-Loop Retest (v1.2)
           </div>
         </div>
@@ -271,11 +271,11 @@ export function CommandCenter({
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-cyan-500/15 text-cyan-300 shadow-[0_0_15px_-2px_rgba(6,182,212,0.4)]">
-              <IconCpu className="h-6 w-6 text-cyan-400" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-300">
+              <IconCpu className="h-5 w-5 text-slate-300" />
             </div>
             <div>
-              <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+              <h3 className="text-sm font-bold tracking-tight text-white group-hover:text-slate-200 transition-colors">
                 Autonomous Agent Operations Center
               </h3>
               <p className="mt-0.5 text-xs text-slate-400">
@@ -287,26 +287,26 @@ export function CommandCenter({
           {/* Mini Robot Roster */}
           <div className="flex items-center gap-2 overflow-x-auto py-1">
             <div title="Change Detection Agent">{getAgentRobot('change_detector', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Reconnaissance Agent">{getAgentRobot('recon', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="API Inventory Engine">{getAgentRobot('inventory', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Attack Planning Agent">{getAgentRobot('planner', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Safety Gateway">{getAgentRobot('safety_gateway', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="IDOR Executor">{getAgentRobot('exec_idor', 'COMPLETED', 30)}</div>
             <div title="Business Logic Executor">{getAgentRobot('exec_bizlogic', 'COMPLETED', 30)}</div>
             <div title="Auth Executor">{getAgentRobot('exec_auth', 'COMPLETED', 30)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Deterministic Verifier">{getAgentRobot('verifier', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Triage Agent">{getAgentRobot('triage', 'COMPLETED', 34)}</div>
-            <div className="w-2 h-0.5 bg-slate-700" />
+            <div className="w-2 h-0.5 bg-slate-800" />
             <div title="Continuous Retest Agent">{getAgentRobot('retest', 'COMPLETED', 34)}</div>
 
-            <span className="ml-3 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 group-hover:bg-cyan-500/25 transition">
+            <span className="ml-3 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300 group-hover:bg-slate-700 group-hover:text-white transition">
               Open Canvas &rarr;
             </span>
           </div>
@@ -320,9 +320,9 @@ export function CommandCenter({
           <Panel
             title="Defense Posture Index"
             subtitle="Real-time multi-tenant API security index"
-            icon={<IconShield className="w-4 h-4" />}
+            icon={<IconShield className="w-4 h-4 text-slate-400" />}
             badge={
-              <span className={`font-mono text-xs font-bold ${postureScore > 75 ? 'text-emerald-400' : postureScore > 40 ? 'text-amber-400' : 'text-rose-400'}`}>
+              <span className={`font-mono text-xs font-semibold ${postureScore > 75 ? 'text-emerald-400' : postureScore > 40 ? 'text-amber-400' : 'text-rose-400'}`}>
                 {postureScore >= 80 ? 'DEFENDED' : postureScore >= 50 ? 'ELEVATED RISK' : 'CRITICAL EXPOSURE'}
               </span>
             }
@@ -330,7 +330,7 @@ export function CommandCenter({
             <div className="flex items-center justify-between gap-6">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className={`text-5xl font-black font-mono tracking-tight ${postureScore > 75 ? 'text-emerald-400' : postureScore > 40 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  <span className="text-5xl font-semibold font-mono tracking-tight text-white">
                     {postureScore}
                   </span>
                   <span className="text-slate-500 font-mono text-sm">/ 100</span>
@@ -341,13 +341,13 @@ export function CommandCenter({
               </div>
 
               {/* Visual Circular Gauge */}
-              <div className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-4 border-slate-800 bg-slate-950 shadow-inner">
+              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-slate-800 bg-slate-950">
                 <div
                   className={`absolute inset-0 rounded-full border-4 border-transparent ${
                     postureScore > 75 ? 'border-t-emerald-400 border-r-emerald-400' : postureScore > 40 ? 'border-t-amber-400 border-r-amber-400' : 'border-t-rose-500 border-r-rose-500'
-                  } animate-cyber-pulse`}
+                  }`}
                 />
-                <span className="font-mono text-xs font-bold text-slate-300">
+                <span className="font-mono text-xs font-semibold text-slate-300">
                   {openTickets.length} THREATS
                 </span>
               </div>
@@ -359,21 +359,21 @@ export function CommandCenter({
                 <span className="font-semibold text-slate-300">Severity Distribution</span>
                 <span>{tickets.length} TOTAL VERIFIED</span>
               </div>
-              <div className="flex h-3 w-full overflow-hidden rounded bg-slate-950">
+              <div className="flex h-2.5 w-full overflow-hidden rounded bg-slate-950">
                 {tickets.length === 0 ? (
-                  <div className="w-full bg-emerald-500/30 text-center text-[9px] text-emerald-300">
+                  <div className="w-full bg-slate-800 text-center text-[9px] text-slate-400">
                     CLEAN BASELINE
                   </div>
                 ) : (
                   <>
                     <div
                       style={{ width: `${(tickets.filter((t) => t.severity === 'CRITICAL').length / tickets.length) * 100}%` }}
-                      className="bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                      className="bg-rose-500"
                       title="Critical"
                     />
                     <div
                       style={{ width: `${(tickets.filter((t) => t.severity === 'HIGH').length / tickets.length) * 100}%` }}
-                      className="bg-amber-500 shadow-[0_0_8px_#f59e0b]"
+                      className="bg-amber-500"
                       title="High"
                     />
                     <div
@@ -430,11 +430,11 @@ export function CommandCenter({
           <Panel
             title={`Active Threat Spotlight (${openTickets.length})`}
             subtitle="Verified vulnerabilities with reproducible zero-false-positive proofs"
-            icon={<IconBug className="w-4 h-4" />}
+            icon={<IconBug className="w-4 h-4 text-slate-400" />}
             actions={
               <button
                 onClick={() => onSelectTab('findings')}
-                className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 hover:underline transition"
+                className="text-xs font-medium text-slate-300 hover:text-white transition"
               >
                 View All Findings &rarr;
               </button>
@@ -473,7 +473,7 @@ export function CommandCenter({
                     </div>
 
                     <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                      <span>Param: <code className="text-cyan-300">{ticket.finding.affected_parameter}</code></span>
+                      <span>Param: <code className="text-slate-300">{ticket.finding.affected_parameter}</code></span>
                       <span>Owner: <strong className="text-slate-400">{ticket.owner_team}</strong></span>
                     </div>
                   </div>
@@ -486,7 +486,7 @@ export function CommandCenter({
           <Panel
             title="Recent Pipeline Scan Executions"
             subtitle="Automated CI/CD webhook deployments and drift watcher scan history"
-            icon={<IconActivity className="w-4 h-4" />}
+            icon={<IconActivity className="w-4 h-4 text-slate-400" />}
           >
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
@@ -503,13 +503,13 @@ export function CommandCenter({
                 <tbody className="divide-y divide-slate-800/60 text-[11px]">
                   {recentScans.map((scan) => (
                     <tr key={scan.id} className="hover:bg-slate-900/40">
-                      <td className="py-2.5 pr-3 text-cyan-300 font-bold">{scan.id}</td>
+                      <td className="py-2.5 pr-3 text-slate-200 font-semibold">{scan.id}</td>
                       <td className="py-2.5 pr-3 text-slate-200 font-sans">{scan.trigger}</td>
                       <td className="py-2.5 pr-3 text-slate-400">{scan.commit}</td>
-                      <td className="py-2.5 pr-3 text-rose-300 font-bold">{scan.findingsFound}</td>
+                      <td className="py-2.5 pr-3 text-slate-200 font-semibold">{scan.findingsFound}</td>
                       <td className="py-2.5 pr-3 text-slate-400">{scan.duration}</td>
                       <td className="py-2.5">
-                        <span className="font-mono text-[11px] font-bold text-emerald-400">
+                        <span className="font-mono text-[11px] font-medium text-slate-300">
                           {scan.status}
                         </span>
                       </td>

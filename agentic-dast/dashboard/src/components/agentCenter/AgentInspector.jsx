@@ -11,7 +11,7 @@ export function AgentInspector({
 
   const statusColors = {
     IDLE: 'text-slate-400',
-    RUNNING: 'text-cyan-300 animate-pulse',
+    RUNNING: 'text-sky-400 font-semibold',
     COMPLETED: 'text-emerald-400',
     BLOCKED: 'text-rose-400',
     WAITING_FOR_APPROVAL: 'text-amber-400',
@@ -63,7 +63,7 @@ export function AgentInspector({
             <span className="text-xs text-slate-400 block">
               Endpoints Handled
             </span>
-            <span className="font-mono text-xl font-bold text-cyan-300 mt-1 block">
+            <span className="font-mono text-xl font-semibold text-white mt-1 block">
               {agent.endpointsProcessed}
             </span>
           </div>
@@ -72,7 +72,7 @@ export function AgentInspector({
             <span className="text-xs text-slate-400 block">
               Findings Generated
             </span>
-            <span className="font-mono text-xl font-bold text-rose-400 mt-1 block">
+            <span className="font-mono text-xl font-semibold text-white mt-1 block">
               {agent.findingsGenerated}
             </span>
           </div>
@@ -81,7 +81,7 @@ export function AgentInspector({
             <span className="text-xs text-slate-400 block">
               Processing Duration
             </span>
-            <span className="font-mono text-xl font-bold text-emerald-400 mt-1 block">
+            <span className="font-mono text-xl font-semibold text-white mt-1 block">
               {agent.durationMs} ms
             </span>
           </div>
@@ -111,7 +111,7 @@ export function AgentInspector({
           <h3 className="text-xs font-semibold text-slate-200 mb-1.5">
             Output Generated
           </h3>
-          <div className="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-300 leading-relaxed">
+          <div className="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-slate-200 leading-relaxed">
             {agent.outputGenerated}
           </div>
         </div>

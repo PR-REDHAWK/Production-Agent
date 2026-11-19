@@ -189,7 +189,7 @@ export function AttackSurfaceView({
           label="Total Endpoints"
           value={summary.endpoints_count ?? endpoints.length}
           sub="Attack Surface Nodes"
-          tone="cyan"
+          tone="slate"
           icon={<IconCpu className="w-4 h-4" />}
         />
         <MetricCard
@@ -251,7 +251,7 @@ export function AttackSurfaceView({
                   setPan({ x: 0, y: 0 })
                 }}
                 title="Reset view"
-                className="px-2 py-1 text-[10px] font-mono text-slate-400 hover:text-cyan-300 border-l border-slate-800"
+                className="px-2 py-1 text-[10px] font-mono text-slate-400 hover:text-white border-l border-slate-800"
               >
                 Reset
               </button>
@@ -261,7 +261,7 @@ export function AttackSurfaceView({
             <a
               href={dastApi.getOpenApiUrl()}
               download="inferred-openapi-3.1.json"
-              className="flex items-center gap-1.5 rounded-lg bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/25 transition shadow-[0_0_10px_-2px_rgba(6,182,212,0.25)]"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-800 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition"
             >
               <IconDownload className="h-3.5 w-3.5" />
               <span>OpenAPI 3.1</span>
@@ -276,7 +276,7 @@ export function AttackSurfaceView({
             onClick={() => setFilterFlow('ALL')}
             className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
               filterFlow === 'ALL'
-                ? 'bg-slate-800 text-cyan-300'
+                ? 'bg-slate-800 text-slate-100'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
             }`}
           >
@@ -290,7 +290,7 @@ export function AttackSurfaceView({
                 onClick={() => setFilterFlow(flow)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-mono font-semibold transition ${
                   filterFlow === flow
-                    ? 'bg-slate-800 text-emerald-300'
+                    ? 'bg-slate-800 text-slate-100'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                 }`}
               >
@@ -372,10 +372,10 @@ export function AttackSurfaceView({
                         width="130"
                         height="32"
                         rx="8"
-                        fill={isVuln ? '#4c0519' : isSelected ? '#083344' : '#0f172a'}
-                        stroke={isVuln ? '#f43f5e' : isSelected ? '#22d3ee' : '#334155'}
+                        fill={isVuln ? '#4c0519' : isSelected ? '#1e293b' : '#0f172a'}
+                        stroke={isVuln ? '#f43f5e' : isSelected ? '#38bdf8' : '#334155'}
                         strokeWidth={isVuln || isSelected ? 2 : 1}
-                        className="transition-all group-hover:stroke-cyan-400"
+                        className="transition-all group-hover:stroke-slate-400"
                       />
                     ) : (
                       <rect
@@ -385,7 +385,7 @@ export function AttackSurfaceView({
                         height="28"
                         rx="14"
                         fill={node.type === 'BusinessFlow' ? '#064e3b' : '#0f172a'}
-                        stroke={isSelected ? '#22d3ee' : node.color}
+                        stroke={isSelected ? '#38bdf8' : node.color}
                         strokeWidth={isSelected ? 2 : 1}
                         className="transition-all group-hover:brightness-125"
                       />
@@ -396,7 +396,7 @@ export function AttackSurfaceView({
                       textAnchor="middle"
                       dy="4"
                       className={`text-[9px] font-mono font-bold select-none ${
-                        isVuln ? 'fill-rose-200' : isSelected ? 'fill-cyan-300' : 'fill-slate-200'
+                        isVuln ? 'fill-rose-200' : isSelected ? 'fill-slate-100' : 'fill-slate-200'
                       }`}
                     >
                       {node.type === 'Endpoint' ? (
@@ -425,12 +425,12 @@ export function AttackSurfaceView({
           {endpoints.length === 0 && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
               <div className="rounded-2xl bg-slate-950/90 p-6 backdrop-blur-md max-w-md shadow-2xl">
-                <IconCpu className="mx-auto h-8 w-8 text-cyan-400 mb-2" />
+                <IconCpu className="mx-auto h-8 w-8 text-slate-400 mb-2" />
                 <h4 className="text-sm font-bold text-white">Knowledge Graph Awaiting Discovery</h4>
                 <p className="mt-1 text-xs text-slate-400 leading-relaxed font-sans">
                   The application topology populates dynamically as the Reconnaissance Agent tokenizes JS bundles and crawls B2B portals.
                 </p>
-                <div className="mt-3 text-[11px] font-mono text-cyan-300">
+                <div className="mt-3 text-[11px] font-mono text-slate-400">
                   Click [Run Full Scan] to discover endpoints
                 </div>
               </div>
@@ -443,7 +443,7 @@ export function AttackSurfaceView({
           <div className="mt-4 rounded-xl bg-slate-950/90 p-5 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-cyan-300">
+                <span className="font-mono text-xs font-bold text-slate-300">
                   {selectedNode.type}
                 </span>
                 <h3 className="font-mono text-sm font-bold text-white">{selectedNode.label}</h3>
@@ -505,9 +505,9 @@ export function AttackSurfaceView({
                 {selectedNode.raw.params && selectedNode.raw.params.length > 0 && (
                   <div>
                     <span className="text-slate-400 text-xs block mb-1 font-sans">Accepted Parameters</span>
-                    <div className="flex flex-wrap gap-1 text-[11px] text-cyan-300">
+                    <div className="flex flex-wrap gap-1 text-[11px] text-slate-300">
                       {selectedNode.raw.params.map((p) => (
-                        <span key={p} className="rounded bg-slate-900 px-2 py-0.5 text-cyan-300">
+                        <span key={p} className="rounded bg-slate-900 px-2 py-0.5 text-slate-300">
                           {p}
                         </span>
                       ))}

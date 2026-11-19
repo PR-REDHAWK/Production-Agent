@@ -52,10 +52,10 @@ export function MethodBadge({ method }) {
 
 export function TagBadge({ children, tone = 'slate' }) {
   const tones = {
-    cyan: 'text-cyan-300',
-    slate: 'text-slate-300',
-    amber: 'text-amber-300',
-    emerald: 'text-emerald-300',
+    cyan: 'text-slate-300',
+    slate: 'text-slate-400',
+    amber: 'text-amber-400',
+    emerald: 'text-emerald-400',
   }
 
   return (

@@ -62,19 +62,19 @@ export function SettingsView({ gatewayState = { metrics: null } }) {
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-lg bg-slate-950/60 p-3">
                 <span className="text-slate-400 block text-xs font-sans mb-1">Global Rate Limit</span>
-                <span className="text-cyan-300 font-bold text-sm">{rl.global_rps ?? 8.0} RPS</span>
+                <span className="text-slate-100 font-semibold text-sm">{rl.global_rps ?? 8.0} RPS</span>
               </div>
               <div className="rounded-lg bg-slate-950/60 p-3">
                 <span className="text-slate-400 block text-xs font-sans mb-1">Per-Endpoint Limit</span>
-                <span className="text-cyan-300 font-bold text-sm">{rl.per_endpoint_rps ?? 4.0} RPS</span>
+                <span className="text-slate-100 font-semibold text-sm">{rl.per_endpoint_rps ?? 4.0} RPS</span>
               </div>
               <div className="rounded-lg bg-slate-950/60 p-3">
                 <span className="text-slate-400 block text-xs font-sans mb-1">Burst Capacity</span>
-                <span className="text-slate-200 font-bold text-sm">{rl.burst_capacity ?? 10} tokens</span>
+                <span className="text-slate-200 font-semibold text-sm">{rl.burst_capacity ?? 10} tokens</span>
               </div>
               <div className="rounded-lg bg-slate-950/60 p-3">
                 <span className="text-slate-400 block text-xs font-sans mb-1">Max Concurrency</span>
-                <span className="text-emerald-400 font-bold text-sm">Semaphore(4)</span>
+                <span className="text-slate-200 font-semibold text-sm">Semaphore(4)</span>
               </div>
             </div>
 
@@ -83,15 +83,15 @@ export function SettingsView({ gatewayState = { metrics: null } }) {
               <div className="mt-1.5 space-y-1 text-slate-300 text-[11px]">
                 <div className="flex justify-between">
                   <span>Max p95 Latency:</span>
-                  <span className="text-amber-300">2000 ms</span>
+                  <span className="text-amber-400">2000 ms</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Max 5xx Error Ratio:</span>
-                  <span className="text-rose-300">25.0%</span>
+                  <span className="text-rose-400">25.0%</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Cooldown Duration:</span>
-                  <span className="text-cyan-300">30.0 s</span>
+                  <span className="text-slate-300">30.0 s</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Sliding Window:</span>
@@ -111,7 +111,7 @@ export function SettingsView({ gatewayState = { metrics: null } }) {
       >
         <div className="grid gap-3 sm:grid-cols-3 text-xs">
           <div className="rounded-xl bg-slate-950/70 p-4">
-            <div className="font-mono text-cyan-300 font-bold text-sm">agency_a_admin</div>
+            <div className="font-mono text-slate-100 font-semibold text-sm">agency_a_admin</div>
             <div className="mt-1 text-slate-400">Agency Alpha Administrator</div>
             <div className="mt-3 text-[11px] font-mono space-y-1 text-slate-500">
               <div>Role: <span className="text-slate-300">admin</span></div>
